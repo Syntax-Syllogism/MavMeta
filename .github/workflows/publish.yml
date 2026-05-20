@@ -25,6 +25,7 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 22
+          registry-url: https://registry.npmjs.org
           cache: npm
 
       - name: Install dependencies
@@ -49,4 +50,6 @@ jobs:
         run: npm run verify:no-unapproved-https
 
       - name: Publish to npm
-        run: npm publish --access public --provenance
+        run: |
+          sed -i '/authToken/d' "$NPM_CONFIG_USERCONFIG"
+          npm publish --access public --provenance
