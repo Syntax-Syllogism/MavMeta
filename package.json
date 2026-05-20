@@ -2,6 +2,10 @@
 	"name": "@syntax-syllogism/mavmeta",
 	"version": "0.1.4",
 	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Syntax-Syllogism/MavMeta.git"
+	},
 	"publishConfig": {
 		"access": "public"
 	},
