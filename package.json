@@ -63,10 +63,10 @@
 		"jsdom": "29.1.1",
 		"light-my-request": "6.6.0",
 		"playwright": "^1.60.0",
-		"svelte": "5.55.8",
+		"svelte": "5.55.9",
 		"tsx": "4.22.3",
 		"typescript": "6.0.3",
 		"vite": "8.0.13",
-		"vitest": "4.1.6"
+		"vitest": "4.1.7"
 	}
 }
