@@ -1,0 +1,13 @@
+# MavMeta Project
+
+MavMeta is a Node localhost application with:
+- Node + Fastify backend (`src/server`)
+- Svelte 5 + Vite frontend (`src/mainview`)
+- shared DTO contracts (`src/shared`)
+
+## Runtime Rules
+
+- Use Node/npm workflows only.
+- Backend endpoints are HTTP under `/api/*`.
+- Frontend calls backend via `src/mainview/backend/backend-client.ts`.
+- Salesforce libraries (`@salesforce/core`, SDR) belong in backend modules only.

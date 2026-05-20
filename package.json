@@ -1,0 +1,68 @@
+{
+	"name": "@syntax-syllogism/mavmeta",
+	"version": "0.1.3",
+	"license": "MIT",
+	"publishConfig": {
+		"access": "public"
+	},
+	"type": "module",
+	"bin": {
+		"mavmeta": "dist-server/index.cjs"
+	},
+	"files": [
+		"dist/",
+		"dist-server/",
+		"README.md",
+		"LICENSE"
+	],
+	"engines": {
+		"node": ">=20.0.0"
+	},
+	"description": "Node localhost control center for Salesforce admins",
+	"scripts": {
+		"start": "npm run build && npm run serve:local",
+		"dev": "npm run dev:local",
+		"dev:local": "concurrently \"npm run dev:server\" \"npm run dev:web\"",
+		"dev:server": "tsx watch src/server/index.ts",
+		"dev:web": "vite",
+		"serve:local": "tsx src/server/index.ts --serve-static",
+		"build": "vite build",
+		"build:server": "node scripts/build-server.mjs",
+		"build:web": "vite build",
+		"prepublishOnly": "npm run build && npm run build:server",
+		"verify:no-inline-scripts": "node scripts/verify-no-inline-scripts.mjs",
+		"verify:no-unapproved-https": "node scripts/verify-no-unapproved-https.mjs",
+		"screenshots:capture": "node scripts/capture-screenshots.mjs",
+		"test": "vitest run",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@codemirror/lang-css": "6.3.1",
+		"@codemirror/lang-html": "6.4.11",
+		"@codemirror/lang-javascript": "6.2.5",
+		"@codemirror/lang-xml": "6.1.0",
+		"@codemirror/theme-one-dark": "6.1.3",
+		"@fastify/static": "9.1.3",
+		"@lucide/svelte": "1.16.0",
+		"@salesforce/core": "8.30.1",
+		"codemirror": "6.0.2",
+		"fastify": "5.8.5",
+		"jszip": "3.10.1"
+	},
+	"devDependencies": {
+		"@sveltejs/vite-plugin-svelte": "7.1.2",
+		"@testing-library/svelte": "5.3.1",
+		"@types/node": "25.8.0",
+		"concurrently": "9.2.1",
+		"esbuild": "^0.28.0",
+		"happy-dom": "20.9.0",
+		"jsdom": "29.1.1",
+		"light-my-request": "6.6.0",
+		"playwright": "^1.60.0",
+		"svelte": "5.55.7",
+		"tsx": "4.22.0",
+		"typescript": "6.0.3",
+		"vite": "8.0.13",
+		"vitest": "4.1.5"
+	}
+}
