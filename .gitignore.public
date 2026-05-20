@@ -15,7 +15,6 @@ dist/
 memory/
 node_modules/
 notes/
-scripts/
 AGENTS.md
 CLAUDE.md
 GEMINI.md
