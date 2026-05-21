@@ -1,5 +1,7 @@
 #!/usr/bin/env node
+const mavmetaCliPath = require("node:path");
 process.env.MAVMETA_SERVE_STATIC = "1";
+process.env.MAVMETA_STATIC_ROOT_DIR ??= mavmetaCliPath.resolve(__dirname, "../dist");
 "use strict";
 var __create = Object.create;
 var __defProp = Object.defineProperty;
@@ -1560,8 +1562,8 @@ function resolveConfigRoot() {
 
 // src/server/system-browser.ts
 var import_node_child_process = require("node:child_process");
-async function openInSystemBrowser(url, spawnProcess = import_node_child_process.spawn) {
-  const command = getOpenCommand(url);
+async function openInSystemBrowser(url, spawnProcess = import_node_child_process.spawn, platform = process.platform) {
+  const command = getOpenCommand(url, platform);
   await new Promise((resolve2, reject) => {
     const process2 = spawnProcess(command[0], command.slice(1), {
       stdio: "ignore",
@@ -1572,12 +1574,12 @@ async function openInSystemBrowser(url, spawnProcess = import_node_child_process
     process2.unref();
   });
 }
-function getOpenCommand(url) {
-  if (process.platform === "darwin") {
+function getOpenCommand(url, platform) {
+  if (platform === "darwin") {
     return ["open", url];
   }
-  if (process.platform === "win32") {
-    return ["cmd", "/c", "start", "", url];
+  if (platform === "win32") {
+    return ["rundll32", "url.dll,FileProtocolHandler", url];
   }
   return ["xdg-open", url];
 }
@@ -1589,6 +1591,7 @@ var OrgService = class {
     this.trialExpirationCacheTtlMs = options?.trialExpirationCacheTtlMs ?? 5 * 60 * 1e3;
   }
   activeOrgStore;
+  oauthInFlight = false;
   trialExpirationCache = /* @__PURE__ */ new Map();
   trialExpirationInflight = /* @__PURE__ */ new Map();
   trialExpirationCacheTtlMs;
@@ -1692,24 +1695,38 @@ var OrgService = class {
     return org;
   }
   async runOauth(options) {
-    const oauthServer = await import_core5.WebOAuthServer.create({
-      oauthConfig: {
-        loginUrl: normalizeLoginUrl(options.loginUrl ?? "")
-      }
-    });
-    await oauthServer.start();
-    await openInSystemBrowser(oauthServer.getAuthorizationUrl());
-    const authInfo = await oauthServer.authorizeAndSave();
-    if (options.alias?.trim()) {
-      await authInfo.setAlias(options.alias.trim());
+    if (this.oauthInFlight) {
+      throw new ApiError(
+        409,
+        "AUTH_IN_PROGRESS",
+        "An org authorization is already in progress. Finish the browser login or wait for it to time out before starting another."
+      );
     }
-    const username = authInfo.getUsername();
-    this.activeOrgStore.setActiveUsername(username);
-    const messagePrefix = options.usernameHint ? `${options.usernameHint} reauthorized as ${username}` : `${username} authenticated`;
-    return {
-      org: await this.getOrg(username),
-      message: `${messagePrefix}.`
-    };
+    this.oauthInFlight = true;
+    try {
+      const oauthServer = await import_core5.WebOAuthServer.create({
+        oauthConfig: {
+          loginUrl: normalizeLoginUrl(options.loginUrl ?? "")
+        }
+      });
+      await oauthServer.start();
+      await openInSystemBrowser(oauthServer.getAuthorizationUrl());
+      const authInfo = await oauthServer.authorizeAndSave();
+      if (options.alias?.trim()) {
+        await authInfo.setAlias(options.alias.trim());
+      }
+      const username = authInfo.getUsername();
+      this.activeOrgStore.setActiveUsername(username);
+      const messagePrefix = options.usernameHint ? `${options.usernameHint} reauthorized as ${username}` : `${username} authenticated`;
+      return {
+        org: await this.getOrg(username),
+        message: `${messagePrefix}.`
+      };
+    } catch (error) {
+      throw toAuthApiError(error);
+    } finally {
+      this.oauthInFlight = false;
+    }
   }
   resolveActiveUsername(orgs) {
     const activeUsername = this.activeOrgStore.getActiveUsername();
@@ -1792,6 +1809,22 @@ function normalizeLoginUrl(loginUrl) {
     return trimmedLoginUrl;
   }
   return `https://${trimmedLoginUrl}`;
+}
+function toAuthApiError(error) {
+  if (error instanceof ApiError) {
+    return error;
+  }
+  if (isOauthPortInUseError(error)) {
+    return new ApiError(
+      409,
+      "AUTH_PORT_IN_USE",
+      "Salesforce OAuth could not start because localhost port 1717 is already in use. Close any other Salesforce CLI auth window/process using that port, then try Auth Org again."
+    );
+  }
+  return error;
+}
+function isOauthPortInUseError(error) {
+  return error instanceof Error && error.message.includes("Cannot start the OAuth redirect server on port 1717");
 }
 function withStartPath(frontDoorUrl, startPath) {
   if (!startPath) return frontDoorUrl;
@@ -2811,6 +2844,7 @@ async function maybeOpenStaticBrowser({
 var host = process.env.MAVMETA_HOST ?? "127.0.0.1";
 var hasExplicitPort = process.env.MAVMETA_PORT !== void 0;
 var shouldServeStatic = process.argv.includes("--serve-static") || process.env.MAVMETA_SERVE_STATIC === "1";
+var staticRootDir = process.env.MAVMETA_STATIC_ROOT_DIR?.trim() || void 0;
 var webPort = parsePort(
   process.env.MAVMETA_WEB_PORT ?? "5173",
   "MAVMETA_WEB_PORT"
@@ -2824,6 +2858,7 @@ if (!isLoopbackHost(host)) {
 }
 var app = createApp({
   serveStatic: shouldServeStatic,
+  staticRootDir,
   allowDevSessionBootstrap: !shouldServeStatic,
   hostAllowlist: shouldServeStatic ? [] : [`127.0.0.1:${webPort}`, `localhost:${webPort}`],
   originAllowlist: shouldServeStatic ? [] : [`http://127.0.0.1:${webPort}`, `http://localhost:${webPort}`]

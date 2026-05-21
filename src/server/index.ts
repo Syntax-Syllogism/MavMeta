@@ -7,6 +7,7 @@ const hasExplicitPort = process.env.MAVMETA_PORT !== undefined;
 const shouldServeStatic =
 	process.argv.includes("--serve-static") ||
 	process.env.MAVMETA_SERVE_STATIC === "1";
+const staticRootDir = process.env.MAVMETA_STATIC_ROOT_DIR?.trim() || undefined;
 const webPort = parsePort(
 	process.env.MAVMETA_WEB_PORT ?? "5173",
 	"MAVMETA_WEB_PORT",
@@ -22,6 +23,7 @@ if (!isLoopbackHost(host)) {
 
 const app = createApp({
 	serveStatic: shouldServeStatic,
+	staticRootDir,
 	allowDevSessionBootstrap: !shouldServeStatic,
 	hostAllowlist: shouldServeStatic
 		? []

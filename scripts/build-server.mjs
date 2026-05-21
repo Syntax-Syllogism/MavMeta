@@ -8,5 +8,12 @@ await esbuild.build({
 	format: "cjs",
 	packages: "external",
 	outfile: "dist-server/index.cjs",
-	banner: { js: '#!/usr/bin/env node\nprocess.env.MAVMETA_SERVE_STATIC = "1";' },
+	banner: {
+		js: [
+			"#!/usr/bin/env node",
+			'const mavmetaCliPath = require("node:path");',
+			'process.env.MAVMETA_SERVE_STATIC = "1";',
+			'process.env.MAVMETA_STATIC_ROOT_DIR ??= mavmetaCliPath.resolve(__dirname, "../dist");',
+		].join("\n"),
+	},
 });
