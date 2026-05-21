@@ -7,6 +7,7 @@ const salesforceCoreMocks = vi.hoisted(() => ({
 	listAllAuthorizations: vi.fn(),
 	authInfoCreate: vi.fn(),
 	orgCreate: vi.fn(),
+	webOAuthServerCreate: vi.fn(),
 }));
 
 vi.mock("@salesforce/core", () => ({
@@ -21,8 +22,12 @@ vi.mock("@salesforce/core", () => ({
 		create: salesforceCoreMocks.orgCreate,
 	},
 	WebOAuthServer: {
-		create: vi.fn(),
+		create: salesforceCoreMocks.webOAuthServerCreate,
 	},
+}));
+
+vi.mock("./system-browser", () => ({
+	openInSystemBrowser: vi.fn().mockResolvedValue(undefined),
 }));
 
 describe("OrgService", () => {
@@ -51,6 +56,14 @@ describe("OrgService", () => {
 				}),
 			}),
 		}));
+		salesforceCoreMocks.webOAuthServerCreate.mockResolvedValue({
+			start: vi.fn().mockResolvedValue(undefined),
+			getAuthorizationUrl: vi.fn().mockReturnValue("https://login.salesforce.com/auth"),
+			authorizeAndSave: vi.fn().mockResolvedValue({
+				getUsername: () => "new@example.com",
+				setAlias: vi.fn().mockResolvedValue(undefined),
+			}),
+		});
 	});
 
 	it("maps Salesforce auth records into org summaries with active default org", async () => {
@@ -215,5 +228,66 @@ describe("OrgService", () => {
 		await service.listOrgs();
 
 		expect(salesforceCoreMocks.orgCreate).toHaveBeenCalledTimes(1);
+	});
+
+	it("returns an actionable auth error when the Salesforce OAuth callback port is busy", async () => {
+		salesforceCoreMocks.webOAuthServerCreate.mockResolvedValue({
+			start: vi.fn().mockRejectedValue(
+				new Error("Cannot start the OAuth redirect server on port 1717."),
+			),
+			getAuthorizationUrl: vi.fn(),
+			authorizeAndSave: vi.fn(),
+		});
+		const service = new OrgService(inMemoryActiveOrgStore());
+
+		await expect(service.authOrg({ loginUrl: "https://login.salesforce.com" }))
+			.rejects.toMatchObject({
+				statusCode: 409,
+				code: "AUTH_PORT_IN_USE",
+				message: expect.stringContaining("localhost port 1717 is already in use"),
+			});
+	});
+
+	it("rejects a second auth request while one is already in progress", async () => {
+		let resolveStart: (() => void) | undefined;
+		const startPromise = new Promise<void>((resolve) => {
+			resolveStart = resolve;
+		});
+		salesforceCoreMocks.listAllAuthorizations.mockResolvedValue([
+			{
+				username: "new@example.com",
+				orgId: "00D000000000004",
+				aliases: [],
+				configs: [],
+				isScratchOrg: false,
+				isSandbox: false,
+				isDevHub: false,
+				instanceUrl: "https://new.example.com",
+				isExpired: false,
+			},
+		]);
+		salesforceCoreMocks.webOAuthServerCreate.mockResolvedValue({
+			start: vi.fn().mockReturnValue(startPromise),
+			getAuthorizationUrl: vi.fn().mockReturnValue("https://login.salesforce.com/auth"),
+			authorizeAndSave: vi.fn().mockResolvedValue({
+				getUsername: () => "new@example.com",
+				setAlias: vi.fn().mockResolvedValue(undefined),
+			}),
+		});
+		const service = new OrgService(inMemoryActiveOrgStore());
+
+		const firstAuth = service.authOrg({ loginUrl: "login.salesforce.com" });
+		await Promise.resolve();
+
+		await expect(service.authOrg({ loginUrl: "login.salesforce.com" }))
+			.rejects.toMatchObject({
+				statusCode: 409,
+				code: "AUTH_IN_PROGRESS",
+			});
+
+		resolveStart?.();
+		await expect(firstAuth).resolves.toMatchObject({
+			message: "new@example.com authenticated.",
+		});
 	});
 });

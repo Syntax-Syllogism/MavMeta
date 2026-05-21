@@ -15,6 +15,7 @@ import type {
 	SetAliasRequest,
 } from "../shared/org";
 import { ActiveOrgStore, type ActiveOrgStoreApi } from "./active-org-store";
+import { ApiError } from "./api-error";
 import { openInSystemBrowser } from "./system-browser";
 
 export type OrgServiceApi = {
@@ -30,6 +31,7 @@ export type OrgServiceApi = {
 };
 
 export class OrgService implements OrgServiceApi {
+	private oauthInFlight = false;
 	private readonly trialExpirationCache = new Map<string, {
 		value: string | undefined;
 		expiresAt: number;
@@ -174,31 +176,47 @@ async listOrgs(): Promise<OrgListResponse> {
 		usernameHint?: string;
 		alias?: string;
 	}): Promise<OrgActionResponse> {
-		const oauthServer = await WebOAuthServer.create({
-			oauthConfig: {
-				loginUrl: normalizeLoginUrl(options.loginUrl ?? ""),
-			},
-		});
-
-		await oauthServer.start();
-		await openInSystemBrowser(oauthServer.getAuthorizationUrl());
-
-		const authInfo = await oauthServer.authorizeAndSave();
-		if (options.alias?.trim()) {
-			await authInfo.setAlias(options.alias.trim());
+		if (this.oauthInFlight) {
+			throw new ApiError(
+				409,
+				"AUTH_IN_PROGRESS",
+				"An org authorization is already in progress. Finish the browser login or wait for it to time out before starting another.",
+			);
 		}
 
-		const username = authInfo.getUsername();
-		this.activeOrgStore.setActiveUsername(username);
+		this.oauthInFlight = true;
 
-		const messagePrefix = options.usernameHint
-			? `${options.usernameHint} reauthorized as ${username}`
-			: `${username} authenticated`;
+		try {
+			const oauthServer = await WebOAuthServer.create({
+				oauthConfig: {
+					loginUrl: normalizeLoginUrl(options.loginUrl ?? ""),
+				},
+			});
 
-		return {
-			org: await this.getOrg(username),
-			message: `${messagePrefix}.`,
-		};
+			await oauthServer.start();
+			await openInSystemBrowser(oauthServer.getAuthorizationUrl());
+
+			const authInfo = await oauthServer.authorizeAndSave();
+			if (options.alias?.trim()) {
+				await authInfo.setAlias(options.alias.trim());
+			}
+
+			const username = authInfo.getUsername();
+			this.activeOrgStore.setActiveUsername(username);
+
+			const messagePrefix = options.usernameHint
+				? `${options.usernameHint} reauthorized as ${username}`
+				: `${username} authenticated`;
+
+			return {
+				org: await this.getOrg(username),
+				message: `${messagePrefix}.`,
+			};
+		} catch (error) {
+			throw toAuthApiError(error);
+		} finally {
+			this.oauthInFlight = false;
+		}
 	}
 
 	private resolveActiveUsername(orgs: OrgSummary[]): string | undefined {
@@ -318,6 +336,25 @@ function normalizeLoginUrl(loginUrl: string): string {
 	}
 
 	return `https://${trimmedLoginUrl}`;
+}
+
+function toAuthApiError(error: unknown): unknown {
+	if (error instanceof ApiError) {
+		return error;
+	}
+	if (isOauthPortInUseError(error)) {
+		return new ApiError(
+			409,
+			"AUTH_PORT_IN_USE",
+			"Salesforce OAuth could not start because localhost port 1717 is already in use. Close any other Salesforce CLI auth window/process using that port, then try Auth Org again.",
+		);
+	}
+	return error;
+}
+
+function isOauthPortInUseError(error: unknown): boolean {
+	return error instanceof Error &&
+		error.message.includes("Cannot start the OAuth redirect server on port 1717");
 }
 
 function withStartPath(frontDoorUrl: string, startPath?: string): string {
