@@ -1,6 +1,6 @@
 {
 	"name": "@syntax-syllogism/mavmeta",
-	"version": "0.1.5",
+	"version": "0.1.6",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
@@ -16,6 +16,7 @@
 	"files": [
 		"dist/",
 		"dist-server/",
+		"CHANGELOG.md",
 		"README.md",
 		"LICENSE"
 	],

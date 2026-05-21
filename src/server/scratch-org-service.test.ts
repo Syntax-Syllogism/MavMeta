@@ -216,7 +216,7 @@ describe("ScratchOrgService", () => {
 		await expect(service.getStatus("op-1")).rejects.toThrow("op-1");
 	});
 
-	it("listSnapshots maps tooling records when snapshots are enabled", async () => {
+	it("listSnapshots maps records when snapshots are enabled", async () => {
 		const query = vi
 			.fn()
 			.mockResolvedValueOnce({ totalSize: 1, records: [] })
@@ -241,7 +241,7 @@ describe("ScratchOrgService", () => {
 			});
 		const service = makeService({
 			orgFactory: vi.fn().mockResolvedValue({
-				getConnection: vi.fn().mockResolvedValue({ tooling: { query } }),
+				getConnection: vi.fn().mockResolvedValue({ query }),
 			} as unknown as Org),
 		});
 
@@ -274,7 +274,7 @@ describe("ScratchOrgService", () => {
 		});
 		const service = makeService({
 			orgFactory: vi.fn().mockResolvedValue({
-				connection: { tooling: { query } },
+				connection: { query },
 			} as unknown as Org),
 		});
 
@@ -283,14 +283,14 @@ describe("ScratchOrgService", () => {
 		expect(result).toEqual({ eligibility: "not-enabled", snapshots: [] });
 	});
 
-	it("listSnapshots rethrows unrelated Tooling API errors", async () => {
+	it("listSnapshots rethrows unrelated API errors", async () => {
 		const query = vi.fn().mockRejectedValue({
 			errorCode: "INVALID_SESSION_ID",
 			message: "Session expired or invalid",
 		});
 		const service = makeService({
 			orgFactory: vi.fn().mockResolvedValue({
-				connection: { tooling: { query } },
+				connection: { query },
 			} as unknown as Org),
 		});
 
@@ -300,14 +300,14 @@ describe("ScratchOrgService", () => {
 		});
 	});
 
-	it("listSnapshots preserves tooling query method context", async () => {
-		const tooling = {
-			marker: "tooling",
+	it("listSnapshots preserves query method context", async () => {
+		const connectionObj = {
+			marker: "connection",
 			query(this: { marker: string }, statement: string) {
-				if (this.marker !== "tooling") {
+				if (this.marker !== "connection") {
 					throw new Error("query context lost");
 				}
-				if (statement.includes("count()")) {
+				if (statement.includes("LIMIT 1") && !statement.includes("ORDER BY")) {
 					return Promise.resolve({ totalSize: 1, records: [] });
 				}
 				return Promise.resolve({ totalSize: 0, records: [] });
@@ -315,7 +315,7 @@ describe("ScratchOrgService", () => {
 		};
 		const service = makeService({
 			orgFactory: vi.fn().mockResolvedValue({
-				getConnection: vi.fn().mockResolvedValue({ tooling }),
+				getConnection: vi.fn().mockResolvedValue(connectionObj),
 			} as unknown as Org),
 		});
 

@@ -42,18 +42,18 @@ type ScratchOrgServiceOptions = {
 	authInfoFactory?: (username: string) => Promise<{ setAlias: (alias: string) => Promise<void> }>;
 };
 
-type ToolingQueryRecord = Record<string, unknown>;
-type ToolingQueryResult = {
+type QueryRecord = Record<string, unknown>;
+type QueryResult = {
 	totalSize?: number;
-	records?: ToolingQueryRecord[];
+	records?: QueryRecord[];
 };
-type ToolingErrorPayload = {
+type QueryErrorPayload = {
 	errorCode?: string;
 	message?: string;
 };
 
 const DEFAULT_COMPLETED_OPERATION_TTL_MS = 10 * 60 * 1000;
-const SNAPSHOT_ELIGIBILITY_QUERY = "SELECT count() FROM OrgSnapshot LIMIT 1";
+const SNAPSHOT_ELIGIBILITY_QUERY = "SELECT Id FROM OrgSnapshot LIMIT 1";
 const SNAPSHOT_LIST_QUERY = "SELECT Id, SnapshotName, Content, Status, ExpirationDate, CreatedDate, SourceOrg FROM OrgSnapshot ORDER BY CreatedDate DESC LIMIT 200";
 
 export class ScratchOrgService implements ScratchOrgServiceApi {
@@ -113,7 +113,7 @@ export class ScratchOrgService implements ScratchOrgServiceApi {
 		const connection = await this.readConnection(hubOrg);
 
 		try {
-			await connection.tooling.query(SNAPSHOT_ELIGIBILITY_QUERY);
+			await connection.query(SNAPSHOT_ELIGIBILITY_QUERY);
 		} catch (error) {
 			if (this.isSnapshotsNotEnabledError(error)) {
 				return {
@@ -124,7 +124,7 @@ export class ScratchOrgService implements ScratchOrgServiceApi {
 			throw error;
 		}
 
-		const response = await connection.tooling.query(SNAPSHOT_LIST_QUERY);
+		const response = await connection.query(SNAPSHOT_LIST_QUERY);
 		const records = Array.isArray(response.records) ? response.records : [];
 		return {
 			eligibility: "enabled",
@@ -171,55 +171,45 @@ export class ScratchOrgService implements ScratchOrgServiceApi {
 	}
 
 	private async readConnection(hubOrg: Org): Promise<{
-		tooling: {
-			query: (query: string) => Promise<ToolingQueryResult>;
-		};
+		query: (query: string) => Promise<QueryResult>;
 	}> {
 		const getConnection = (hubOrg as unknown as {
 			getConnection?: () => Promise<{
-				tooling?: {
-					query?: (query: string) => Promise<ToolingQueryResult>;
-				};
+				query?: (query: string) => Promise<QueryResult>;
 			}>;
 		}).getConnection;
 
 		if (typeof getConnection === "function") {
 			const connection = await getConnection.call(hubOrg);
-			if (typeof connection?.tooling?.query === "function") {
+			if (typeof connection?.query === "function") {
 				return connection as {
-					tooling: {
-						query: (query: string) => Promise<ToolingQueryResult>;
-					};
+					query: (query: string) => Promise<QueryResult>;
 				};
 			}
 		}
 
 		const connection = (hubOrg as unknown as {
 			connection?: {
-				tooling?: {
-					query?: (query: string) => Promise<ToolingQueryResult>;
-				};
+				query?: (query: string) => Promise<QueryResult>;
 			};
 		}).connection;
-		if (typeof connection?.tooling?.query !== "function") {
-			throw new ApiError(500, "INTERNAL_ERROR", "Salesforce Tooling API is unavailable for this org.");
+		if (typeof connection?.query !== "function") {
+			throw new ApiError(500, "INTERNAL_ERROR", "Salesforce API is unavailable for this org.");
 		}
 		return connection as {
-			tooling: {
-				query: (query: string) => Promise<ToolingQueryResult>;
-			};
+			query: (query: string) => Promise<QueryResult>;
 		};
 	}
 
 	private isSnapshotsNotEnabledError(error: unknown): boolean {
-		const details = this.readToolingErrorDetails(error);
+		const details = this.readQueryErrorDetails(error);
 		if (details.errorCode === "INVALID_TYPE" && details.message.includes("orgsnapshot")) {
 			return true;
 		}
 		return details.message.includes("sobject type 'orgsnapshot' is not supported");
 	}
 
-	private mapOrgSnapshot(record: ToolingQueryRecord): OrgSnapshot | undefined {
+	private mapOrgSnapshot(record: QueryRecord): OrgSnapshot | undefined {
 		const id = this.readOptionalString(record.Id);
 		const snapshotName = this.readOptionalString(record.SnapshotName);
 		const createdDate = this.readOptionalString(record.CreatedDate);
@@ -242,7 +232,7 @@ export class ScratchOrgService implements ScratchOrgServiceApi {
 		return typeof value === "string" && value.trim() !== "" ? value : undefined;
 	}
 
-	private readToolingErrorDetails(error: unknown): { errorCode?: string; message: string } {
+	private readQueryErrorDetails(error: unknown): { errorCode?: string; message: string } {
 		if (!error || typeof error !== "object") {
 			return { message: "" };
 		}
@@ -257,7 +247,7 @@ export class ScratchOrgService implements ScratchOrgServiceApi {
 
 		const firstDataError =
 			Array.isArray(objectError.data) && objectError.data.length > 0
-				? (objectError.data[0] as ToolingErrorPayload)
+				? (objectError.data[0] as QueryErrorPayload)
 				: undefined;
 		const dataMessage =
 			typeof firstDataError?.message === "string" ? firstDataError.message.toLowerCase() : "";

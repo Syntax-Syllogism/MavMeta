@@ -149,7 +149,14 @@ async listOrgs(): Promise<OrgListResponse> {
 			);
 		}
 
-		await org.delete();
+		try {
+			await org.delete();
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			if (!message.includes("expired or deleted")) {
+				throw error;
+			}
+		}
 
 		if (this.activeOrgStore.getActiveUsername() === target.username) {
 			this.activeOrgStore.clear();

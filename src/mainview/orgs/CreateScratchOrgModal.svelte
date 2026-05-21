@@ -554,48 +554,52 @@
             {/if}
           </div>
 
-          <label class="field-group">
-            Alias <span class="field-hint">(leave blank to auto-generate)</span>
-            <input
-              type="text"
-              bind:value={alias}
-              placeholder="e.g. dev-force"
-              autocomplete="off"
-            />
-          </label>
+          <div class="settings-grid-2">
+            <label class="field-group">
+              Alias <span class="field-hint">(leave blank to auto-generate)</span>
+              <input
+                type="text"
+                bind:value={alias}
+                placeholder="e.g. dev-force"
+                autocomplete="off"
+              />
+            </label>
 
-          <label class="field-group" class:field-error={durationError !== ""}>
-            Duration (days)
-            <input
-              type="number"
-              value={durationDays}
-              min="1"
-              max="30"
-              oninput={(e) => onDurationInput(e.currentTarget.value)}
-            />
-            {#if durationError}
-              <span class="error-text">{durationError}</span>
-            {/if}
-          </label>
+            <label class="field-group" class:field-error={durationError !== ""}>
+              Duration (days)
+              <input
+                type="number"
+                value={durationDays}
+                min="1"
+                max="30"
+                oninput={(e) => onDurationInput(e.currentTarget.value)}
+              />
+              {#if durationError}
+                <span class="error-text">{durationError}</span>
+              {/if}
+            </label>
+          </div>
 
           {#if creationMode === "standard"}
-            <label class="field-group">
-              Template
-              <select bind:value={selectedTemplate}>
-                {#each Object.entries(TEMPLATE_LABELS) as [value, label] (value)}
-                  <option {value}>{label}</option>
-                {/each}
-              </select>
-            </label>
+            <div class="settings-grid-2">
+              <label class="field-group">
+                Template
+                <select bind:value={selectedTemplate}>
+                  {#each Object.entries(TEMPLATE_LABELS) as [value, label] (value)}
+                    <option {value}>{label}</option>
+                  {/each}
+                </select>
+              </label>
 
-            <label class="field-group">
-              Edition
-              <select bind:value={edition}>
-                {#each EDITION_OPTIONS as opt (opt)}
-                  <option value={opt}>{opt}</option>
-                {/each}
-              </select>
-            </label>
+              <label class="field-group">
+                Edition
+                <select bind:value={edition}>
+                  {#each EDITION_OPTIONS as opt (opt)}
+                    <option value={opt}>{opt}</option>
+                  {/each}
+                </select>
+              </label>
+            </div>
 
             <label class="field-group">
               Org Name <span class="field-hint">(display name in Salesforce)</span>
@@ -751,7 +755,7 @@
               class="definition-editor"
               value={definitionJson}
               oninput={(e) => onDefinitionInput(e.currentTarget.value)}
-              rows={14}
+              rows={20}
               spellcheck={false}
               aria-label="Scratch org definition JSON"
             ></textarea>
@@ -886,7 +890,7 @@
 
 <style>
   .wizard-modal {
-    width: 560px;
+    width: 740px;
     max-width: 96vw;
     max-height: 90vh;
     display: flex;
@@ -897,25 +901,25 @@
 
   .wizard-modal-header {
     border-bottom: 1px solid var(--color-border-subtle);
-    padding: 18px 20px;
+    padding: 20px 24px;
     flex-shrink: 0;
   }
 
   .wizard-modal-footer {
-    padding: 16px 20px;
+    padding: 18px 24px;
     flex-shrink: 0;
   }
 
   .wizard-body {
     flex: 1;
     overflow-y: auto;
-    padding: 1rem 1.5rem;
+    padding: 1.5rem 2rem;
   }
 
   .wizard-section {
     display: flex;
     flex-direction: column;
-    gap: 0.875rem;
+    gap: 1.25rem;
   }
 
   .wizard-section-hint {
@@ -938,7 +942,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    max-height: 220px;
+    max-height: 300px;
     overflow-y: auto;
     border: 1px solid var(--color-border-subtle);
     border-radius: 4px;
@@ -1033,13 +1037,20 @@
     gap: 0.4rem;
   }
 
+  .settings-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem 1.5rem;
+    align-items: end;
+  }
+
   .mode-button {
     border: 1px solid var(--color-border-subtle);
     background: var(--color-bg-elevated);
     color: var(--color-text-secondary);
-    padding: 0.45rem 0.6rem;
+    padding: 0.6rem 0.8rem;
     text-align: center;
-    font-size: 0.8rem;
+    font-size: 0.875rem;
     border-radius: 6px;
   }
 
@@ -1179,7 +1190,7 @@
     font-family: monospace;
     font-size: 0.8rem;
     resize: vertical;
-    min-height: 200px;
+    min-height: 300px;
     line-height: 1.5;
     white-space: pre;
     overflow-x: auto;
@@ -1189,7 +1200,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    max-height: 320px;
+    max-height: 420px;
     overflow-y: auto;
     padding-right: 0.125rem;
   }
