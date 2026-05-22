@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
 	import type { OrgSummary } from "../shared/org";
 
 	let {
@@ -39,11 +39,11 @@
 				<input bind:value={aliasDraft} autocomplete="off" />
 			</label>
 			<div class="modal-actions">
-				<button class="ghost-button" type="button" onclick={onCancel}>
+				<button class="btn btn--ghost" type="button" onclick={onCancel}>
 					Cancel
 				</button>
 				<button
-					class="primary-button"
+					class="btn btn--primary"
 					type="submit"
 					disabled={!aliasDraft.trim() || isSaving}
 				>
@@ -53,3 +53,6 @@
 		</form>
 	</div>
 </div>
+
+
+

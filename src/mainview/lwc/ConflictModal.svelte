@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
   type Props = {
     currentLastModifiedDate: string;
     changedFiles: string[];
@@ -33,9 +33,9 @@
     </ul>
 
     <div class="modal-actions">
-      <button class="ghost-button" type="button" onclick={onCancel}>Cancel</button>
-      <button class="ghost-button" type="button" onclick={onReload}>Reload from Org</button>
-      <button class="primary-button danger-button" type="button" onclick={onOverwrite}>
+      <button class="btn btn--ghost" type="button" onclick={onCancel}>Cancel</button>
+      <button class="btn btn--ghost" type="button" onclick={onReload}>Reload from Org</button>
+      <button class="btn btn--danger" type="button" onclick={onOverwrite}>
         Overwrite Anyway
       </button>
     </div>
@@ -57,3 +57,6 @@
     overflow-y: auto;
   }
 </style>
+
+
+

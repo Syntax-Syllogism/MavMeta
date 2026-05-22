@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
   import { backendClient } from "../backend/backend-client";
   import type { OrgSummary } from "../../shared/org";
   import type { LwcBundleSummary, LwcCompileError, LwcFile } from "../../shared/lwc";
@@ -222,7 +222,7 @@
           currentLastModifiedDate: result.currentLastModifiedDate,
           changedFiles: result.changedFiles,
         };
-        statusMessage = "Deploy conflict — org was modified after you loaded this bundle.";
+        statusMessage = "Deploy conflict â€” org was modified after you loaded this bundle.";
       }
     } catch (error) {
       statusMessage = toErrorMessage(error);
@@ -315,7 +315,7 @@
                 <span class="dirty-indicator">Dirty: {dirtyFiles.map((p) => p.split("/").pop()).join(", ")}</span>
               {/if}
               <button
-                class="ghost-button"
+                class="btn btn--ghost"
                 type="button"
                 onclick={revert}
                 disabled={!hasDirty || isDeploying}
@@ -323,7 +323,7 @@
                 Revert
               </button>
               <button
-                class="primary-button"
+                class="btn btn--primary"
                 type="button"
                 onclick={() => void deploy()}
                 disabled={!canDeploy}
@@ -359,8 +359,8 @@
       <h2>You have unsaved edits</h2>
       <p>Switching bundles will discard your local changes to {selectedBundle?.developerName}.</p>
       <div class="modal-actions">
-        <button class="ghost-button" type="button" onclick={cancelBundleSwitch}>Cancel</button>
-        <button class="primary-button danger-button" type="button" onclick={confirmBundleSwitch}>
+        <button class="btn btn--ghost" type="button" onclick={cancelBundleSwitch}>Cancel</button>
+        <button class="btn btn--danger" type="button" onclick={confirmBundleSwitch}>
           Discard & Switch
         </button>
       </div>
@@ -440,3 +440,6 @@
     flex-shrink: 0;
   }
 </style>
+
+
+

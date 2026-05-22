@@ -12,12 +12,23 @@ import { MetadataService, type MetadataServiceApi } from "./metadata-service";
 import { ObjectExplorerService, type ObjectExplorerServiceApi } from "./object-explorer-service";
 import { OrgService, type OrgServiceApi } from "./org-service";
 import { RestService, type RestServiceApi } from "./rest-service";
+import { SoqlService, type SoqlServiceApi } from "./soql-service";
 import { ScratchOrgService, type ScratchOrgServiceApi } from "./scratch-org-service";
 import { validateMetadataName } from "./metadata-name";
 import { redactSecrets } from "./redact-secrets";
 import type { CrossOrgDiffRequest, GetComponentSourceRequest } from "../shared/metadata";
 import type { RestExecuteRequest } from "../shared/rest";
 import type { DeployLwcBundleRequest } from "../shared/lwc";
+import type {
+	BulkQueryResultRequest,
+	BulkQueryStatusRequest,
+	DescribeGlobalRequest,
+	DescribeObjectRequest,
+	RunQueryRequest,
+	SoqlApiType,
+	StartBulkQueryRequest,
+	ValidateQueryRequest,
+} from "../shared/soql";
 
 type ErrorPayload = {
 	code: string;
@@ -30,6 +41,7 @@ type CreateAppOptions = {
 	objectExplorerService?: ObjectExplorerServiceApi;
 	deployService?: DeployServiceApi;
 	restService?: RestServiceApi;
+	soqlService?: SoqlServiceApi;
 	scratchOrgService?: ScratchOrgServiceApi;
 	lwcService?: LwcServiceApi;
 	serveStatic?: boolean;
@@ -59,6 +71,7 @@ export function createApp(options: CreateAppOptions = {}) {
 	const objectExplorerService = options.objectExplorerService ?? new ObjectExplorerService();
 	const deployService = options.deployService ?? new DeployService();
 	const restService = options.restService ?? new RestService();
+	const soqlService = options.soqlService ?? new SoqlService();
 	const scratchOrgService = options.scratchOrgService ?? new ScratchOrgService();
 	const lwcService = options.lwcService ?? new LwcService();
 	const sessionToken = options.sessionToken ?? randomBytes(32).toString("hex");
@@ -272,6 +285,28 @@ export function createApp(options: CreateAppOptions = {}) {
 	app.post("/api/rest/execute", async (request) =>
 		restService.executeRequest(readRestExecuteRequest(request.body)),
 	);
+	app.post("/api/soql/describe-global", async (request) =>
+		soqlService.describeGlobal(readSoqlDescribeGlobalRequest(request.body)),
+	);
+	app.post("/api/soql/describe-object", async (request) =>
+		soqlService.describeObject(readSoqlDescribeObjectRequest(request.body)),
+	);
+	app.post("/api/soql/validate", async (request) =>
+		soqlService.validateQuery(readSoqlValidateRequest(request.body)),
+	);
+	app.post("/api/soql/run", async (request) =>
+		soqlService.runQuery(readSoqlRunRequest(request.body)),
+	);
+	app.post("/api/soql/bulk/start", async (request) =>
+		soqlService.startBulkQuery(readSoqlBulkStartRequest(request.body)),
+	);
+	app.post("/api/soql/bulk/status", async (request) =>
+		soqlService.getBulkQueryStatus(readSoqlBulkStatusRequest(request.body)),
+	);
+	app.get("/api/soql/bulk/result", async (request, reply) => {
+		const csv = await soqlService.getBulkQueryResult(readSoqlBulkResultRequest(request.query));
+		return reply.type("text/csv; charset=utf-8").send(csv);
+	});
 
 	app.post("/api/lwc/bundles/list", async (request) =>
 		lwcService.listBundles(readLwcListBundlesRequest(request.body)),
@@ -638,6 +673,96 @@ function readRestExecuteRequest(body: unknown): RestExecuteRequest {
 	}
 
 	return { username, method, path, headers, body: bodyText };
+}
+
+function readSoqlApi(body: Record<string, unknown>): SoqlApiType {
+	const api = readStringField(body, "api", { required: true });
+	if (api !== "rest" && api !== "tooling") {
+		throw new ApiError(400, "INVALID_REQUEST", 'Field "api" must be "rest" or "tooling".');
+	}
+	return api;
+}
+
+function readSoqlDescribeGlobalRequest(body: unknown): DescribeGlobalRequest {
+	const objectBody = readObjectBody(body);
+	return {
+		username: readStringField(objectBody, "username", { required: true }) as string,
+		api: readSoqlApi(objectBody),
+	};
+}
+
+function readSoqlDescribeObjectRequest(body: unknown): DescribeObjectRequest {
+	const objectBody = readObjectBody(body);
+	return {
+		username: readStringField(objectBody, "username", { required: true }) as string,
+		api: readSoqlApi(objectBody),
+		sobject: readStringField(objectBody, "sobject", { required: true }) as string,
+	};
+}
+
+function readSoqlValidateRequest(body: unknown): ValidateQueryRequest {
+	const objectBody = readObjectBody(body);
+	return {
+		username: readStringField(objectBody, "username", { required: true }) as string,
+		api: readSoqlApi(objectBody),
+		soql: readStringField(objectBody, "soql", { required: true }) as string,
+	};
+}
+
+function readSoqlRunRequest(body: unknown): RunQueryRequest {
+	const objectBody = readObjectBody(body);
+	const previewLimitRaw = objectBody.previewLimit;
+	let previewLimit: number | undefined;
+	if (previewLimitRaw !== undefined) {
+		if (typeof previewLimitRaw !== "number" || !Number.isInteger(previewLimitRaw) || previewLimitRaw <= 0) {
+			throw new ApiError(400, "INVALID_REQUEST", 'Field "previewLimit" must be a positive integer when provided.');
+		}
+		previewLimit = previewLimitRaw;
+	}
+	const includeAllPagesRaw = objectBody.includeAllPages;
+	let includeAllPages: boolean | undefined;
+	if (includeAllPagesRaw !== undefined) {
+		if (typeof includeAllPagesRaw !== "boolean") {
+			throw new ApiError(400, "INVALID_REQUEST", 'Field "includeAllPages" must be a boolean when provided.');
+		}
+		includeAllPages = includeAllPagesRaw;
+	}
+	const nextRecordsUrl = readStringField(objectBody, "nextRecordsUrl");
+	if (nextRecordsUrl !== undefined && !nextRecordsUrl.startsWith("/")) {
+		throw new ApiError(400, "INVALID_REQUEST", 'Field "nextRecordsUrl" must start with "/".');
+	}
+	return {
+		username: readStringField(objectBody, "username", { required: true }) as string,
+		api: readSoqlApi(objectBody),
+		soql: readStringField(objectBody, "soql", { required: true }) as string,
+		previewLimit,
+		includeAllPages,
+		nextRecordsUrl,
+	};
+}
+
+function readSoqlBulkStartRequest(body: unknown): StartBulkQueryRequest {
+	const objectBody = readObjectBody(body);
+	return {
+		username: readStringField(objectBody, "username", { required: true }) as string,
+		soql: readStringField(objectBody, "soql", { required: true }) as string,
+	};
+}
+
+function readSoqlBulkStatusRequest(body: unknown): BulkQueryStatusRequest {
+	const objectBody = readObjectBody(body);
+	return {
+		username: readStringField(objectBody, "username", { required: true }) as string,
+		jobId: readStringField(objectBody, "jobId", { required: true }) as string,
+	};
+}
+
+function readSoqlBulkResultRequest(query: unknown): BulkQueryResultRequest {
+	const queryBody = readObjectBody(query);
+	return {
+		username: readStringField(queryBody, "username", { required: true }) as string,
+		jobId: readStringField(queryBody, "jobId", { required: true }) as string,
+	};
 }
 
 function readStartScratchOrgCreateRequest(body: unknown) {

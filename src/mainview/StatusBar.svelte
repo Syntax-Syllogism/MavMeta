@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
 	let { isBusy, statusMessage }: { isBusy: boolean; statusMessage: string } = $props();
 </script>
 
@@ -8,3 +8,5 @@
 	{/if}
 	{statusMessage}
 </footer>
+
+

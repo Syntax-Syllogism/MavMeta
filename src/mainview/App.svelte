@@ -1,9 +1,10 @@
-<script lang="ts">
+﻿<script lang="ts">
   import { onMount } from "svelte";
   import type { ComponentType } from "svelte";
   import Building2 from "@lucide/svelte/icons/building-2";
   import Code2 from "@lucide/svelte/icons/code-2";
   import Layers from "@lucide/svelte/icons/layers";
+  import Database from "@lucide/svelte/icons/database";
   import Moon from "@lucide/svelte/icons/moon";
   import Settings from "@lucide/svelte/icons/settings";
   import Sun from "@lucide/svelte/icons/sun";
@@ -62,9 +63,10 @@
   import MetadataExplorer from "./metadata/MetadataExplorer.svelte";
   import ObjectExplorer from "./objects/ObjectExplorer.svelte";
   import RestExplorer from "./rest/RestExplorer.svelte";
+  import SoqlExplorer from "./soql/SoqlExplorer.svelte";
   import LwcPlayground from "./lwc/LwcPlayground.svelte";
 
-  type WorkbenchTool = "Orgs" | "Metadata" | "Objects" | "REST" | "LWC";
+  type WorkbenchTool = "Orgs" | "Metadata" | "Objects" | "REST" | "LWC" | "SOQL";
 
   let orgs = $state<OrgSummary[]>([]);
   let activeOrg = $state<OrgSummary | undefined>();
@@ -157,6 +159,7 @@
     { tool: "Objects", tooltip: "Objects", ariaLabel: "Object Explorer", icon: Table2 },
     { tool: "LWC", tooltip: "LWC", ariaLabel: "LWC Editor", icon: Code2 },
     { tool: "REST", tooltip: "REST", ariaLabel: "REST Explorer", icon: Terminal },
+    { tool: "SOQL", tooltip: "SOQL", ariaLabel: "SOQL Explorer", icon: Database },
   ];
 
   const activeOrgLabel = $derived(
@@ -1691,7 +1694,7 @@
   }
 
   function openSettingsPlaceholder() {
-    statusMessage = "Settings — coming soon.";
+    statusMessage = "Settings â€” coming soon.";
   }
 </script>
 
@@ -1700,10 +1703,10 @@
     <div
       class="brand-icon tooltip-trigger"
       role="img"
-      aria-label="MavMeta — Admin Workbench"
+      aria-label="MavMeta â€” Admin Workbench"
     >
       <span class="brand-mark" aria-hidden="true"></span>
-      <span class="nav-tooltip" role="tooltip" aria-hidden="true">MavMeta — Admin Workbench</span>
+      <span class="nav-tooltip" role="tooltip" aria-hidden="true">MavMeta â€” Admin Workbench</span>
     </div>
 
     <nav class="nav-list" aria-label="Workbench tools">
@@ -1745,7 +1748,7 @@
         onclick={openSettingsPlaceholder}
       >
         <Settings size={20} strokeWidth={1.9} aria-hidden="true" />
-        <span class="nav-tooltip" role="tooltip" aria-hidden="true">Settings — coming soon</span>
+        <span class="nav-tooltip" role="tooltip" aria-hidden="true">Settings â€” coming soon</span>
       </button>
     </div>
   </aside>
@@ -1838,6 +1841,8 @@
         />
       {:else if selectedTool === "REST"}
         <RestExplorer {activeOrg} apiVersion={metadataApiVersion} />
+      {:else if selectedTool === "SOQL"}
+        <SoqlExplorer {activeOrg} />
       {:else if selectedTool === "LWC"}
         <LwcPlayground {activeOrg} />
       {:else if selectedTool === "Metadata"}
@@ -1924,8 +1929,8 @@
           will clear these items.
         </p>
         <div class="modal-actions">
-          <button class="ghost-button" type="button" onclick={cancelOrgSwitch}>Cancel</button>
-          <button class="primary-button danger-button" type="button" onclick={confirmOrgSwitch}>
+          <button class="btn btn--ghost" type="button" onclick={cancelOrgSwitch}>Cancel</button>
+          <button class="btn btn--danger" type="button" onclick={confirmOrgSwitch}>
             Clear Cart & Switch
           </button>
         </div>
@@ -1997,3 +2002,6 @@
     {quirkyDeployMessage}
   />
 </main>
+
+
+

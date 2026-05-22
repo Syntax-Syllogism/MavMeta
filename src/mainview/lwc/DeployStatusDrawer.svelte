@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
   import type { Snippet } from "svelte";
   import type { LwcCompileError } from "../../shared/lwc";
 
@@ -49,7 +49,7 @@
       aria-expanded={isExpanded}
       aria-controls="drawer-content"
     >
-      <span class="drawer-icon">{isExpanded ? "▾" : "▸"}</span>
+        <span class="drawer-icon">{isExpanded ? "▾" : "▸"}</span>
       {#if isDeploying}
         <span>Deploying...</span>
       {:else if outcome.kind === "success"}
@@ -191,3 +191,5 @@
     margin-right: 6px;
   }
 </style>
+
+

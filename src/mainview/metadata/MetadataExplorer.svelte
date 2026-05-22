@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
 	import type { MetadataComponentSummary, MetadataTypeSummary } from "../../shared/metadata";
 	import {
 		formatMetadataDetailValue,
@@ -189,7 +189,7 @@
 										onclick={() => (isMetadataInspectorExpanded = !isMetadataInspectorExpanded)}
 										aria-expanded={isMetadataInspectorExpanded}
 									>
-										<span class="chevron">{isMetadataInspectorExpanded ? "▾" : "▸"}</span>
+              <span class="chevron">{isMetadataInspectorExpanded ? "▾" : "▸"}</span>
 										<div class="inspector-title">
 											<p class="eyebrow">{selectedMetadataComponent.type}</p>
 											<h3 title={selectedMetadataComponent.fullName}>
@@ -199,7 +199,7 @@
 									</button>
 									<div class="inspector-actions">
 										<button
-											class="ghost-button compact-button"
+											class="btn btn--ghost btn--compact"
 											type="button"
 											onclick={() => onListMetadataComponents(undefined, true)}
 											disabled={isLoadingMetadataComponents}
@@ -253,7 +253,7 @@
 							{:else}
 								<div class="empty-state compact-empty">
 									<p>Select a component to inspect details.</p>
-									<button class="ghost-button compact-button" type="button" onclick={() => onListMetadataComponents(undefined, true)} disabled={isLoadingMetadataComponents}>
+									<button class="btn btn--ghost btn--compact" type="button" onclick={() => onListMetadataComponents(undefined, true)} disabled={isLoadingMetadataComponents}>
 										Refresh List
 									</button>
 								</div>
@@ -282,7 +282,7 @@
 								{#each metadataComponentGroups as group (group.name)}
 									<section class="component-group">
 										<button class="group-toggle" type="button" onclick={() => onToggleMetadataGroup(group.name)} aria-expanded={group.isExpanded}>
-											<span title={group.name}>{group.isExpanded ? "▾" : "▸"} {group.name}</span>
+                    <span title={group.name}>{group.isExpanded ? "▾" : "▸"} {group.name}</span>
 											<strong>{group.components.length}</strong>
 										</button>
 										{#if group.isExpanded}
@@ -374,3 +374,6 @@
 				{/if}
 	</section>
 </div>
+
+
+

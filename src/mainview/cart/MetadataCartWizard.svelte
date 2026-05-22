@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
 	import Fish from "@lucide/svelte/icons/fish";
 	import type { CrossOrgDeployResult, DestructiveDeployResult } from "../../shared/deploy";
 	import type { CrossOrgDiffResult } from "../../shared/metadata";
@@ -267,7 +267,7 @@
 						<p>{cartSubtitle}</p>
 					</div>
 				</div>
-				<button class="icon-button close-drawer-button" type="button" onclick={onClose} aria-label="Close">
+				<button class="btn btn--ghost btn--icon  close-drawer-button" type="button" onclick={onClose} aria-label="Close">
 					<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
 						<path d="m6 6 12 12M18 6 6 18" />
 					</svg>
@@ -298,7 +298,7 @@
 					<section class="save-list-feature" aria-label="Save staged metadata list">
 						<div class="save-input-group">
 							<input bind:value={saveListName} autocomplete="off" placeholder="my saved list" aria-label="Saved list name" />
-							<button class="primary-button save-list-button" type="button" onclick={onSaveList} disabled={!saveListName.trim() || isListSaved}>
+							<button class="btn btn--primary save-list-button" type="button" onclick={onSaveList} disabled={!saveListName.trim() || isListSaved}>
 								<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
 									<path d="M5 4h12l2 2v14H5z" />
 									<path d="M8 4v6h8V4M8 17h8" />
@@ -379,7 +379,7 @@
 						<div class="review-heading">
 							<p class="eyebrow">Items Review</p>
 							<div class="review-actions">
-								<label class="ghost-button drawer-secondary-action file-import-button">
+								<label class="btn btn--ghost drawer-secondary-action file-import-button">
 									Import package.xml
 									<input
 										type="file"
@@ -394,7 +394,7 @@
 										}}
 									/>
 								</label>
-								<button class="text-danger-button" type="button" onclick={onClearCart} disabled={!activeOrgStagedItems.length}>
+								<button class="text-btn--danger" type="button" onclick={onClearCart} disabled={!activeOrgStagedItems.length}>
 									Clear All
 								</button>
 							</div>
@@ -412,7 +412,7 @@
 											{#each group.items as item (item.id)}
 												<div class="staged-item-row">
 													<span class="component-name-cell" title={item.fullName}>{item.fullName}</span>
-													<button class="icon-button remove-action" type="button" onclick={() => onRemoveStagedItem(item.id)} aria-label="Remove">
+													<button class="btn btn--ghost btn--icon  remove-action" type="button" onclick={() => onRemoveStagedItem(item.id)} aria-label="Remove">
 														<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
 															<path d="M6 7h12M10 11v6M14 11v6M9 7V4h6v3M8 7l1 13h6l1-13" />
 														</svg>
@@ -548,7 +548,7 @@
 
 					<section class="confirm-action-selection">
 						<p class="eyebrow">Action Mode</p>
-						<div class="mode-toggle">
+						<div class="segmented">
 							<button class="toggle-button" class:active={runMode === "validate"} type="button" onclick={() => runMode = "validate"}>
 								Validate Only
 							</button>
@@ -630,7 +630,7 @@
 
 					<section class="confirm-action-selection">
 						<p class="eyebrow">Action Mode</p>
-						<div class="mode-toggle">
+						<div class="segmented">
 							<button class="toggle-button" class:active={runMode === "validate"} type="button" onclick={() => runMode = "validate"}>
 								Validate Only
 							</button>
@@ -764,14 +764,14 @@
 									</div>
 								</section>
 
-									<button class="ghost-button cancel-deploy-button" type="button" onclick={onCancelRunningDeploy}>
+									<button class="btn btn--ghost cancel-deploy-button" type="button" onclick={onCancelRunningDeploy}>
 										Cancel Operation (Esc)
 									</button>
-									<button class="ghost-button open-target-button" type="button" onclick={onOpenDeploymentStatusTargetOrg}>
+									<button class="btn btn--ghost open-target-button" type="button" onclick={onOpenDeploymentStatusTargetOrg}>
 										Open Deployment Status
 									</button>
 									{#if canOpenSpecificDeployment}
-										<button class="ghost-button open-target-button" type="button" onclick={onOpenSpecificDeploymentStatus}>
+										<button class="btn btn--ghost open-target-button" type="button" onclick={onOpenSpecificDeploymentStatus}>
 											Open This Deployment
 										</button>
 									{/if}
@@ -850,11 +850,11 @@
 									</details>
 								{/if}
 
-										<button class="ghost-button open-target-button" type="button" onclick={onOpenDeploymentStatusTargetOrg}>
+										<button class="btn btn--ghost open-target-button" type="button" onclick={onOpenDeploymentStatusTargetOrg}>
 											Open Deployment Status
 										</button>
 										{#if canOpenSpecificDeployment}
-											<button class="ghost-button open-target-button" type="button" onclick={onOpenSpecificDeploymentStatus}>
+											<button class="btn btn--ghost open-target-button" type="button" onclick={onOpenSpecificDeploymentStatus}>
 												Open This Deployment
 											</button>
 										{/if}
@@ -873,21 +873,21 @@
 
 			<footer class="cart-drawer-footer">
 				{#if cartStep === "list"}
-					<button class="ghost-button drawer-secondary-action" type="button" onclick={onClose}>Cancel</button>
-					<button class="primary-button drawer-primary-action" type="button" aria-label="Next" onclick={() => onSetCartStep("actions")} disabled={!activeOrgStagedItems.length}>Next Step</button>
+					<button class="btn btn--ghost drawer-secondary-action" type="button" onclick={onClose}>Cancel</button>
+					<button class="btn btn--primary drawer-primary-action" type="button" aria-label="Next" onclick={() => onSetCartStep("actions")} disabled={!activeOrgStagedItems.length}>Next Step</button>
 				{:else if cartStep === "actions"}
-					<button class="ghost-button drawer-secondary-action" type="button" aria-label="Back" onclick={() => onSetCartStep("list")}>Previous Step</button>
-					<button class="primary-button drawer-primary-action" type="button" aria-label="Next" onclick={onContinueFromActions} disabled={!cartAction || !activeOrgStagedItems.length}>Next Step</button>
+					<button class="btn btn--ghost drawer-secondary-action" type="button" aria-label="Back" onclick={() => onSetCartStep("list")}>Previous Step</button>
+					<button class="btn btn--primary drawer-primary-action" type="button" aria-label="Next" onclick={onContinueFromActions} disabled={!cartAction || !activeOrgStagedItems.length}>Next Step</button>
 				{:else if cartStep === "confirm"}
-					<button class="ghost-button drawer-secondary-action" type="button" aria-label="Back" onclick={() => onSetCartStep("actions")}>Previous Step</button>
+					<button class="btn btn--ghost drawer-secondary-action" type="button" aria-label="Back" onclick={() => onSetCartStep("actions")}>Previous Step</button>
 					{#if cartAction === "compare"}
-						<button class="primary-button drawer-primary-action" type="button" onclick={onRunCompare} disabled={!compareTargetUsername || isRunningCompare}>
+						<button class="btn btn--primary drawer-primary-action" type="button" onclick={onRunCompare} disabled={!compareTargetUsername || isRunningCompare}>
 							Run Compare
 						</button>
 					{:else}
 						<button
-							class="primary-button drawer-primary-action"
-							class:danger-button={cartAction !== "deploy"}
+							class="btn btn--primary drawer-primary-action"
+							class:btn--danger={cartAction !== "deploy"}
 							type="button"
 							onclick={onRunDelete}
 							disabled={!canRunDeleteAction || (runMode === "deploy" && isProductionLikeTarget && !deployTypedConfirmationMatches)}
@@ -898,28 +898,28 @@
 					{/if}
 				{:else}
 					{#if cartAction === "compare"}
-						<button class="ghost-button drawer-secondary-action" type="button" onclick={onFinish} disabled={isRunningCompare}>
+						<button class="btn btn--ghost drawer-secondary-action" type="button" onclick={onFinish} disabled={isRunningCompare}>
 							Finish & Close
 						</button>
-						<button class="primary-button drawer-primary-action" type="button" onclick={onRunCompare} disabled={isRunningCompare}>
+						<button class="btn btn--primary drawer-primary-action" type="button" onclick={onRunCompare} disabled={isRunningCompare}>
 							Retry Compare
 						</button>
 					{:else if canDeployValidatedResult}
-						<button class="ghost-button drawer-secondary-action" type="button" onclick={onFinish} disabled={isRunningDeploy}>
+						<button class="btn btn--ghost drawer-secondary-action" type="button" onclick={onFinish} disabled={isRunningDeploy}>
 							Finish & Close
 						</button>
-						<button class="primary-button danger-button drawer-primary-action" type="button" onclick={onDeployValidatedResult}>
+						<button class="btn btn--primary btn--danger drawer-primary-action" type="button" onclick={onDeployValidatedResult}>
 							Deploy
 						</button>
 					{:else if canDeployValidatedCrossOrgResult}
-						<button class="ghost-button drawer-secondary-action" type="button" onclick={onFinish} disabled={isRunningDeploy}>
+						<button class="btn btn--ghost drawer-secondary-action" type="button" onclick={onFinish} disabled={isRunningDeploy}>
 							Finish & Close
 						</button>
-						<button class="primary-button drawer-primary-action" type="button" onclick={onDeployValidatedCrossOrgResult}>
+						<button class="btn btn--primary drawer-primary-action" type="button" onclick={onDeployValidatedCrossOrgResult}>
 							Deploy
 						</button>
 					{:else}
-						<button class="primary-button drawer-finish-action" type="button" onclick={onFinish} disabled={isRunningDeploy}>
+						<button class="btn btn--primary drawer-finish-action" type="button" onclick={onFinish} disabled={isRunningDeploy}>
 							Finish & Close
 						</button>
 					{/if}
@@ -937,3 +937,6 @@
 		/>
 	{/if}
 {/if}
+
+
+

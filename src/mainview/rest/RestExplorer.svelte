@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
   import { untrack } from "svelte";
   import { backendClient } from "../backend/backend-client";
   import type { OrgSummary } from "../../shared/org";
@@ -38,6 +38,8 @@
     status: number;
     durationMs: number;
     timestamp: number;
+    responseBody: unknown;
+    isJson: boolean;
   };
   const MAX_HISTORY_ENTRIES = 20;
   let history = $state<HistoryEntry[]>([]);
@@ -103,6 +105,8 @@
           status: result.status,
           durationMs: result.durationMs,
           timestamp: Date.now(),
+          responseBody: result.body,
+          isJson: result.isJson,
         },
         ...history.slice(0, MAX_HISTORY_ENTRIES - 1),
       ];
@@ -131,6 +135,37 @@
 
   function removeFromHistory(timestamp: number) {
     history = history.filter((entry) => entry.timestamp !== timestamp);
+  }
+
+  function triggerDownload(content: string, fileName: string, contentType: string) {
+    const blob = new Blob([content], { type: contentType });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function downloadHistoryEntry(entry: HistoryEntry) {
+    const payload = {
+      request: {
+        method: entry.method,
+        path: entry.path,
+      },
+      response: {
+        status: entry.status,
+        durationMs: entry.durationMs,
+        timestamp: new Date(entry.timestamp).toISOString(),
+        body: entry.responseBody,
+        isJson: entry.isJson,
+      },
+    };
+    const json = JSON.stringify(payload, null, 2);
+    const fileName = `rest-request-${entry.timestamp}.json`;
+    triggerDownload(json, fileName, "application/json;charset=utf-8");
   }
 
   function statusClass(status: number): string {
@@ -195,11 +230,11 @@
             {/each}
           </datalist>
           <button
-            class="primary-button"
+            class="btn btn--primary"
             type="submit"
             disabled={isLoading || !path.trim()}
           >
-            {isLoading ? "Sending…" : "Send"}
+            {isLoading ? "Sending..." : "Send"}
           </button>
         </div>
 
@@ -272,7 +307,17 @@
                   <span class="muted">{formatTimestamp(entry.timestamp)}</span>
                 </button>
                 <button
-                  class="rest-history-delete"
+                  class="btn btn--ghost rest-history-action"
+                  type="button"
+                  onclick={(event) => {
+                    event.stopPropagation();
+                    downloadHistoryEntry(entry);
+                  }}
+                >
+                  Download JSON
+                </button>
+                <button
+                  class="btn btn--ghost rest-history-action rest-history-action--danger"
                   type="button"
                   aria-label="Delete history entry"
                   title="Delete history entry"
@@ -281,7 +326,7 @@
                     removeFromHistory(entry.timestamp);
                   }}
                 >
-                  ×
+                  Remove
                 </button>
               </div>
             </li>
@@ -308,7 +353,7 @@
       >
         <div>
           <p class="eyebrow">Confirm {method} Request</p>
-          <h2>{method} {path.length > 60 ? `…${path.slice(-57)}` : path}</h2>
+          <h2>{method} {path.length > 60 ? `...${path.slice(-57)}` : path}</h2>
         </div>
         <p class="modal-target">{orgLabel}</p>
 
@@ -337,7 +382,7 @@
 
         <div class="modal-actions">
           <button
-            class="ghost-button"
+            class="btn btn--ghost"
             type="button"
             onclick={() => {
               showConfirm = false;
@@ -347,7 +392,7 @@
             Cancel
           </button>
           <button
-            class="primary-button danger-button"
+            class="btn btn--danger"
             type="submit"
             disabled={isProduction ? !typedConfirmationMatches : false}
           >
@@ -358,3 +403,6 @@
     </div>
   </div>
 {/if}
+
+
+

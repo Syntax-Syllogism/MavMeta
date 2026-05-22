@@ -1,4 +1,4 @@
-<script module lang="ts">
+﻿<script module lang="ts">
 	import type { ChildMetadataItem, ObjectSummary } from "../../shared/object-explorer";
 
 	export const objectListCache = new Map<string, ObjectSummary[]>();
@@ -339,7 +339,7 @@ import {
                 onclick={() => (isInspectorExpanded = !isInspectorExpanded)}
                 aria-expanded={isInspectorExpanded}
               >
-                <span class="chevron">{isInspectorExpanded ? "▾" : "▸"}</span>
+              <span class="chevron">{isInspectorExpanded ? "▾" : "▸"}</span>
                 <div>
                   <p class="eyebrow">{selectedChild.metadataType}</p>
                   <h3 title={selectedChild.fullName}>{selectedChild.childApiName}</h3>
@@ -493,7 +493,7 @@ import {
     overflow-y: auto;
   }
 
-  /* Object directory rows — same pattern as .metadata-row-button */
+  /* Object directory rows â€” same pattern as .metadata-row-button */
   .object-row {
     display: grid;
     grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr);
@@ -696,7 +696,7 @@ import {
     overflow-y: auto;
   }
 
-  /* Child metadata rows — mirrors .component-row but with more columns */
+  /* Child metadata rows â€” mirrors .component-row but with more columns */
   .child-row {
     display: grid;
     grid-template-columns: 28px minmax(140px, 1.4fr) minmax(140px, 1.2fr) minmax(110px, 0.9fr) minmax(110px, 0.9fr) 80px;
@@ -748,3 +748,6 @@ import {
     font-size: 0.72rem;
   }
 </style>
+
+
+

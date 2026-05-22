@@ -10,6 +10,7 @@ import type { LwcServiceApi } from "./lwc-service";
 import type { MetadataServiceApi } from "./metadata-service";
 import type { OrgServiceApi } from "./org-service";
 import type { RestServiceApi } from "./rest-service";
+import type { SoqlServiceApi } from "./soql-service";
 import type { ScratchOrgServiceApi } from "./scratch-org-service";
 
 function createOrgServiceMock(): OrgServiceApi {
@@ -110,6 +111,22 @@ function createLwcServiceMock(): LwcServiceApi {
 			durationMs: 100,
 			newLastModifiedDate: "2024-01-01T00:01:00.000Z",
 		}),
+	};
+}
+
+function createSoqlServiceMock(): SoqlServiceApi {
+	return {
+		describeGlobal: vi.fn().mockResolvedValue({ sobjects: [] }),
+		describeObject: vi.fn().mockResolvedValue({ sobject: "Account", fields: [] }),
+		validateQuery: vi.fn().mockResolvedValue({ valid: true }),
+		runQuery: vi.fn().mockResolvedValue({
+			records: [],
+			totalSize: 0,
+			done: true,
+		}),
+		startBulkQuery: vi.fn().mockResolvedValue({ jobId: "750xx0000000001AAA" }),
+		getBulkQueryStatus: vi.fn().mockResolvedValue({ jobId: "750xx0000000001AAA", state: "JobComplete" }),
+		getBulkQueryResult: vi.fn().mockResolvedValue("Id,Name\n001,Acme\n"),
 	};
 }
 
@@ -527,6 +544,72 @@ describe("createApp", () => {
 			headers: undefined,
 			body: undefined,
 		});
+	});
+
+	it("calls soql describe-global endpoint", async () => {
+		const soqlService = createSoqlServiceMock();
+		const app = createTestApp({
+			orgService: createOrgServiceMock(),
+			metadataService: createMetadataServiceMock(),
+			deployService: createDeployServiceMock(),
+			soqlService,
+		});
+		apps.push(app);
+
+		const response = await app.inject(withApiHeaders({
+			method: "POST",
+			url: "/api/soql/describe-global",
+			payload: { username: "user@example.com", api: "rest" },
+		}));
+
+		expect(response.statusCode).toBe(200);
+		expect(soqlService.describeGlobal).toHaveBeenCalledWith({
+			username: "user@example.com",
+			api: "rest",
+		});
+	});
+
+	it("rejects soql describe-global with invalid api", async () => {
+		const app = createTestApp({
+			orgService: createOrgServiceMock(),
+			metadataService: createMetadataServiceMock(),
+			deployService: createDeployServiceMock(),
+			soqlService: createSoqlServiceMock(),
+		});
+		apps.push(app);
+
+		const response = await app.inject(withApiHeaders({
+			method: "POST",
+			url: "/api/soql/describe-global",
+			payload: { username: "user@example.com", api: "metadata" },
+		}));
+
+		expect(response.statusCode).toBe(400);
+		expect(response.json()).toMatchObject({ code: "INVALID_REQUEST" });
+	});
+
+	it("rejects soql run with invalid nextRecordsUrl", async () => {
+		const app = createTestApp({
+			orgService: createOrgServiceMock(),
+			metadataService: createMetadataServiceMock(),
+			deployService: createDeployServiceMock(),
+			soqlService: createSoqlServiceMock(),
+		});
+		apps.push(app);
+
+		const response = await app.inject(withApiHeaders({
+			method: "POST",
+			url: "/api/soql/run",
+			payload: {
+				username: "user@example.com",
+				api: "rest",
+				soql: "SELECT Id FROM Account",
+				nextRecordsUrl: "services/data/v62.0/query/01g...",
+			},
+		}));
+
+		expect(response.statusCode).toBe(400);
+		expect(response.json()).toMatchObject({ code: "INVALID_REQUEST" });
 	});
 
 	it("rejects rest execute with invalid method", async () => {

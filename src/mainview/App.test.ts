@@ -51,6 +51,10 @@ vi.mock("./backend/backend-client", () => ({
 		getDestructiveDeployStatus: vi.fn(),
 		cancelDestructiveDeploy: vi.fn(),
 		executeRestRequest: vi.fn(),
+		soqlDescribeGlobal: vi.fn(),
+		soqlDescribeObject: vi.fn(),
+		soqlValidate: vi.fn(),
+		soqlRun: vi.fn(),
 		listObjects: vi.fn(),
 		listObjectChildren: vi.fn(),
 		listLwcBundles: vi.fn(),
@@ -120,6 +124,10 @@ describe("App Smoke Tests", () => {
 		mockedBackendClient.listLwcBundles.mockResolvedValue({
 			bundles: [],
 		});
+		mockedBackendClient.soqlDescribeGlobal.mockResolvedValue({ sobjects: [] });
+		mockedBackendClient.soqlDescribeObject.mockResolvedValue({ sobject: "Account", fields: [] });
+		mockedBackendClient.soqlValidate.mockResolvedValue({ valid: true });
+		mockedBackendClient.soqlRun.mockResolvedValue({ records: [], totalSize: 0, done: true });
 		mockedBackendClient.getDestructiveDeployStatus.mockResolvedValue({
 			operationId: "op-1",
 			status: "succeeded",
@@ -247,6 +255,7 @@ describe("App Smoke Tests", () => {
 		expect(screen.getByRole("button", { name: "Object Explorer" })).toBeTruthy();
 		expect(screen.getByRole("button", { name: "LWC Editor" })).toBeTruthy();
 		expect(screen.getByRole("button", { name: "REST Explorer" })).toBeTruthy();
+		expect(screen.getByRole("button", { name: "SOQL Explorer" })).toBeTruthy();
 		expect(screen.getByRole("button", { name: "Toggle color theme" })).toBeTruthy();
 		expect(screen.getByRole("button", { name: "Settings (coming soon)" }).getAttribute("aria-disabled")).toBe("true");
 		expect(screen.getByText("Admin Workbench")).toBeTruthy();

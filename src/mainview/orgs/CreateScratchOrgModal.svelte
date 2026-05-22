@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
   import type { ListSnapshotsResponse, OrgSnapshot } from "../../shared/scratch-org";
   import type { OrgSummary } from "../../shared/org";
   import { backendClient } from "../backend/backend-client";
@@ -180,7 +180,7 @@
       return snapshotError || "Could not reach Salesforce Tooling API. Retry in a moment.";
     }
     if (snapshotEligibility === "not-enabled") {
-      return "Snapshots are not enabled on this Dev Hub. Enable them in Setup → Dev Hub on the hub org.";
+      return "Snapshots are not enabled on this Dev Hub. Enable them in Setup â†’ Dev Hub on the hub org.";
     }
     if (snapshotFetchState === "loaded" && snapshots.length === 0) {
       return "No snapshots available for this Dev Hub. Create one via the Salesforce CLI (sf org snapshot create).";
@@ -260,7 +260,7 @@
       return "expired";
     }
     if (days <= 14) {
-      return `${days}d ⚠`;
+      return `${days}d âš `;
     }
     if (days <= 30) {
       return `${days}d`;
@@ -281,7 +281,7 @@
 
   function formatSnapshotDate(iso: string): string {
     const value = new Date(iso);
-    return Number.isNaN(value.getTime()) ? "—" : value.toLocaleDateString();
+    return Number.isNaN(value.getTime()) ? "â€”" : value.toLocaleDateString();
   }
 
   function onDefinitionInput(value: string) {
@@ -440,11 +440,11 @@
         </span>
         <div>
           <h2>Create Scratch Org</h2>
-          <p>STEP {currentStepIndex + 1} OF {stepLabels.length} — {currentStepLabel}</p>
+          <p>STEP {currentStepIndex + 1} OF {stepLabels.length} â€” {currentStepLabel}</p>
         </div>
       </div>
       <button
-        class="icon-button close-drawer-button"
+        class="btn btn--ghost btn--icon  close-drawer-button"
         type="button"
         onclick={onClose}
         disabled={isCreating}
@@ -529,7 +529,7 @@
         <div class="wizard-section">
           <div class="field-group">
             <span class="field-label">Creation Method</span>
-            <div class="creation-mode-toggle">
+            <div class="creation-segmented">
               <button
                 type="button"
                 class="mode-button"
@@ -622,14 +622,14 @@
                     <option value={suggestion}></option>
                   {/each}
                 </datalist>
-                <button class="ghost-button tag-add-btn" type="button" onclick={addFeature}>Add</button>
+                <button class="btn btn--ghost tag-add-btn" type="button" onclick={addFeature}>Add</button>
               </div>
               {#if features.length > 0}
                 <div class="tag-list">
                   {#each features as f (f)}
                     <span class="tag">
                       {f}
-                      <button type="button" class="tag-remove" onclick={() => removeFeature(f)} aria-label={`Remove ${f}`}>×</button>
+                      <button type="button" class="tag-remove" onclick={() => removeFeature(f)} aria-label={`Remove ${f}`}>Ã—</button>
                     </span>
                   {/each}
                 </div>
@@ -652,7 +652,7 @@
                     <option value={g.label}></option>
                   {/each}
                 </datalist>
-                <button class="ghost-button tag-add-btn" type="button" onclick={addSetting}>Add</button>
+                <button class="btn btn--ghost tag-add-btn" type="button" onclick={addSetting}>Add</button>
               </div>
               {#each settingEntries as entry (entry.group)}
                 {@const curatedGroup = CURATED_SETTINGS.find((g) => g.group === entry.group)}
@@ -664,7 +664,7 @@
                       class="tag-remove"
                       onclick={() => removeSetting(entry.group)}
                       aria-label={`Remove ${entry.group}`}
-                    >×</button>
+                    >Ã—</button>
                   </div>
                   {#if curatedGroup && curatedGroup.subKeys.length > 0}
                     <table class="settings-subkeys">
@@ -736,7 +736,7 @@
         <div class="wizard-section">
           <p class="wizard-section-hint">
             Review and edit the scratch org definition JSON before creation.
-            Edit freely — changes here are sent directly to Salesforce.
+            Edit freely â€” changes here are sent directly to Salesforce.
           </p>
 
           {#if regeneratedNotice}
@@ -745,7 +745,7 @@
 
           {#if creationMode === "snapshot"}
             <p class="snapshot-advisory">
-              <strong>Snapshot mode — advanced edits not recommended.</strong> When a <code>snapshot</code> key is present, Salesforce only honors a small set of co-supported fields. Adding or changing other keys here is allowed by the editor but will likely cause scratch org creation to fail. Stick with the pre-filled definition unless you know exactly which keys your snapshot supports.
+              <strong>Snapshot mode â€” advanced edits not recommended.</strong> When a <code>snapshot</code> key is present, Salesforce only honors a small set of co-supported fields. Adding or changing other keys here is allowed by the editor but will likely cause scratch org creation to fail. Stick with the pre-filled definition unless you know exactly which keys your snapshot supports.
             </p>
           {/if}
 
@@ -803,7 +803,7 @@
                   </div>
                   <div>
                     <span>Alias</span>
-                    <strong>{alias || "—"}</strong>
+                    <strong>{alias || "â€”"}</strong>
                   </div>
                   <div>
                     <span>Edition</span>
@@ -834,13 +834,13 @@
     <footer class="cart-drawer-footer wizard-modal-footer">
       <!-- Left: secondary action -->
       {#if currentStep === "devhub"}
-        <button class="ghost-button drawer-secondary-action" type="button" onclick={onClose}>Cancel</button>
+        <button class="btn btn--ghost drawer-secondary-action" type="button" onclick={onClose}>Cancel</button>
       {:else if currentStep === "settings" || currentStep === "definition"}
-        <button class="ghost-button drawer-secondary-action" type="button" onclick={goBack}>Back</button>
+        <button class="btn btn--ghost drawer-secondary-action" type="button" onclick={goBack}>Back</button>
       {:else if currentStep === "create" && createdUsername}
-        <button class="ghost-button drawer-secondary-action" type="button" onclick={handleDone}>Done</button>
+        <button class="btn btn--ghost drawer-secondary-action" type="button" onclick={handleDone}>Done</button>
       {:else if currentStep === "create" && createError && !isCreating}
-        <button class="ghost-button drawer-secondary-action" type="button" onclick={retryFromDefinition}>Back to Definition</button>
+        <button class="btn btn--ghost drawer-secondary-action" type="button" onclick={retryFromDefinition}>Back to Definition</button>
       {:else}
         <span></span>
       {/if}
@@ -848,7 +848,7 @@
       <!-- Right: primary action -->
       {#if currentStep === "devhub"}
         <button
-          class="primary-button drawer-primary-action"
+          class="btn btn--primary drawer-primary-action"
           type="button"
           onclick={goNext}
           disabled={!canProceedFromDevHub}
@@ -857,7 +857,7 @@
         </button>
       {:else if currentStep === "settings"}
         <button
-          class="primary-button drawer-primary-action"
+          class="btn btn--primary drawer-primary-action"
           type="button"
           onclick={goNext}
           disabled={!canProceedFromSettings}
@@ -866,7 +866,7 @@
         </button>
       {:else if currentStep === "definition"}
         <button
-          class="primary-button drawer-primary-action"
+          class="btn btn--primary drawer-primary-action"
           type="button"
           onclick={goNext}
           disabled={!canCreate}
@@ -875,7 +875,7 @@
         </button>
       {:else if currentStep === "create" && createdUsername}
         <button
-          class="primary-button drawer-primary-action"
+          class="btn btn--primary drawer-primary-action"
           type="button"
           onclick={handleSetActive}
         >
@@ -1031,7 +1031,7 @@
     font-size: 0.875rem;
   }
 
-  .creation-mode-toggle {
+  .creation-segmented {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0.4rem;
@@ -1316,3 +1316,6 @@
     margin: 0;
   }
 </style>
+
+
+

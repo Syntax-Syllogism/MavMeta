@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
   import type { OrgSummary } from "../../shared/org";
 
   let {
@@ -96,11 +96,11 @@
       <h2>Org Directory</h2>
     </div>
     <div class="panel-header-actions">
-      <button class="ghost-button" type="button" onclick={onRefreshOrgs}>
+      <button class="btn btn--ghost" type="button" onclick={onRefreshOrgs}>
         {isLoadingOrgs ? "Refreshing" : "Refresh Orgs"}
       </button>
       <button
-        class="primary-button"
+        class="btn btn--primary"
         type="button"
         onclick={onStartCreateScratchOrg}
       >
@@ -119,7 +119,7 @@
       <input bind:value={authAlias} autocomplete="off" placeholder="optional" />
     </label>
     <button
-      class="primary-button login-button"
+      class="btn btn--primary login-button"
       type="button"
       onclick={onAuthOrg}
       disabled={activeAction === "auth-org"}
@@ -263,3 +263,6 @@
     </div>
   {/if}
 </div>
+
+
+

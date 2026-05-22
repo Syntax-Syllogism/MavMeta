@@ -143,7 +143,6 @@ Optional backend env vars:
 │       ├── main.ts
 │       ├── index.html
 │       └── app.css
-├── notes/                  # Discovery, plans, and work items
 ├── vite.config.ts
 ├── svelte.config.js
 └── package.json

@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
   import type { LwcFile } from "../../shared/lwc";
 
   type Props = {
@@ -27,7 +27,7 @@
       type="button"
       onclick={() => onSelectFile(file.filePath)}
     >
-      {shortName(file.filePath)}{isDirty ? " ●" : ""}
+      {shortName(file.filePath)}{isDirty ? " â—" : ""}
     </button>
   {/each}
 </div>
@@ -69,3 +69,5 @@
     color: var(--color-warning);
   }
 </style>
+
+
