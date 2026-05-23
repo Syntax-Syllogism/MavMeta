@@ -42,9 +42,7 @@ export class ObjectExplorerService implements ObjectExplorerServiceApi {
 	async listObjects(request: ListObjectsRequest): Promise<ListObjectsResponse> {
 		const connection = await this.getConnection(request.target.username);
 		const apiVersion = connection.getApiVersion();
-		const records = toArray(
-			await connection.metadata.list([{ type: "CustomObject" }], apiVersion),
-		);
+		const records = toArray(await connection.metadata.list([{ type: "CustomObject" }], apiVersion));
 
 		const objects: ObjectSummary[] = records
 			.map(toObjectSummary)

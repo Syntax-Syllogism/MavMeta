@@ -4,14 +4,14 @@ Thank you for your interest in contributing to MavMeta! This is a hobbyist proje
 
 ## How to Contribute
 
-1.  **Report Bugs:** If you find a bug, please open an issue with a clear description and steps to reproduce.
-2.  **Suggest Features:** Have an idea? Open an issue to discuss it.
-3.  **Submit Pull Requests:** 
-    *   Fork the repository.
-    *   Create a new branch for your feature or fix.
-    *   Write clear, documented code.
-    *   Ensure tests pass (`npm test`).
-    *   Open a Pull Request with a description of your changes.
+1. **Report Bugs:** If you find a bug, please open an issue with a clear description and steps to reproduce.
+1. **Suggest Features:** Have an idea? Open an issue to discuss it.
+1. **Submit Pull Requests:**
+   - Fork the repository.
+   - Create a new branch for your feature or fix.
+   - Write clear, documented code.
+   - Ensure tests pass (`npm test`).
+   - Open a Pull Request with a description of your changes.
 
 ## Development Setup
 

@@ -32,10 +32,13 @@ export type OrgServiceApi = {
 
 export class OrgService implements OrgServiceApi {
 	private oauthInFlight = false;
-	private readonly trialExpirationCache = new Map<string, {
-		value: string | undefined;
-		expiresAt: number;
-	}>();
+	private readonly trialExpirationCache = new Map<
+		string,
+		{
+			value: string | undefined;
+			expiresAt: number;
+		}
+	>();
 	private readonly trialExpirationInflight = new Map<string, Promise<string | undefined>>();
 	private readonly trialExpirationCacheTtlMs: number;
 
@@ -46,14 +49,13 @@ export class OrgService implements OrgServiceApi {
 		this.trialExpirationCacheTtlMs = options?.trialExpirationCacheTtlMs ?? 5 * 60 * 1000;
 	}
 
-async listOrgs(): Promise<OrgListResponse> {
+	async listOrgs(): Promise<OrgListResponse> {
 		const authorizations = await AuthInfo.listAllAuthorizations();
-		const orgs = (await Promise.all(
-			authorizations.map((authorization) => this.toOrgSummary(authorization)),
-		))
-			.sort((left, right) =>
-				(left.alias ?? left.username).localeCompare(right.alias ?? right.username),
-			);
+		const orgs = (
+			await Promise.all(authorizations.map((authorization) => this.toOrgSummary(authorization)))
+		).sort((left, right) =>
+			(left.alias ?? left.username).localeCompare(right.alias ?? right.username),
+		);
 		const activeUsername = this.resolveActiveUsername(orgs);
 		const activeOrg = activeUsername
 			? orgs.find((org) => org.username === activeUsername)
@@ -144,9 +146,7 @@ async listOrgs(): Promise<OrgListResponse> {
 		const isScratch = await org.determineIfScratch();
 
 		if (!isScratch) {
-			throw new Error(
-				`Only scratch orgs can be deleted. ${target.username} is not a scratch org.`,
-			);
+			throw new Error(`Only scratch orgs can be deleted. ${target.username} is not a scratch org.`);
 		}
 
 		try {
@@ -267,18 +267,15 @@ async listOrgs(): Promise<OrgListResponse> {
 
 		const fetchPromise = (async () => {
 			try {
-			const org = await Org.create({ aliasOrUsername: username });
-			const connection = org.getConnection();
-			const response = await (
-				connection.query(
+				const org = await Org.create({ aliasOrUsername: username });
+				const connection = org.getConnection();
+				const response = await (connection.query(
 					"SELECT TrialExpirationDate FROM Organization",
 				) as unknown as Promise<{
 					records?: Array<{ TrialExpirationDate?: string | null }>;
-				}>
-			);
+				}>);
 				const value = response.records?.[0]?.TrialExpirationDate;
-				const normalized =
-					typeof value === "string" && value.trim() ? value : undefined;
+				const normalized = typeof value === "string" && value.trim() ? value : undefined;
 				this.trialExpirationCache.set(username, {
 					value: normalized,
 					expiresAt: Date.now() + this.trialExpirationCacheTtlMs,
@@ -301,10 +298,7 @@ async listOrgs(): Promise<OrgListResponse> {
 	}
 }
 
-function toOrgSummary(
-	authorization: OrgAuthorization,
-	trialExpirationDate?: string,
-): OrgSummary {
+function toOrgSummary(authorization: OrgAuthorization, trialExpirationDate?: string): OrgSummary {
 	return {
 		alias: authorization.aliases?.[0] ?? undefined,
 		username: authorization.username,
@@ -335,10 +329,7 @@ function normalizeLoginUrl(loginUrl: string): string {
 	if (!trimmedLoginUrl) {
 		return "https://login.salesforce.com";
 	}
-	if (
-		trimmedLoginUrl.startsWith("http://") ||
-		trimmedLoginUrl.startsWith("https://")
-	) {
+	if (trimmedLoginUrl.startsWith("http://") || trimmedLoginUrl.startsWith("https://")) {
 		return trimmedLoginUrl;
 	}
 
@@ -360,8 +351,10 @@ function toAuthApiError(error: unknown): unknown {
 }
 
 function isOauthPortInUseError(error: unknown): boolean {
-	return error instanceof Error &&
-		error.message.includes("Cannot start the OAuth redirect server on port 1717");
+	return (
+		error instanceof Error &&
+		error.message.includes("Cannot start the OAuth redirect server on port 1717")
+	);
 }
 
 function withStartPath(frontDoorUrl: string, startPath?: string): string {

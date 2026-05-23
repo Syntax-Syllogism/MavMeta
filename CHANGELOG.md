@@ -5,16 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0/).
 
+## [0.2.1] - 2026-05-22
+
+### Changed
+
+- Internal maintenance and tooling updates
+
 ## [0.2.0] - 2026-05-22
 
 ### Added
+
 - SOQL Explorer for querying Salesforce objects with searchable SObject autocomplete
 - Download functionality for REST request history
 
 ### Changed
+
 - Standardized UI design system with BEM button naming
 
 ### Fixed
+
 - Improved Tooling API support in SOQL service
 
 ## [0.1.6] - 2026-05-21

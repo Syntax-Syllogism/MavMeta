@@ -28,12 +28,7 @@
 	});
 </script>
 
-<div
-	class="diff-modal-overlay"
-	role="dialog"
-	aria-modal="true"
-	aria-label="XML diff viewer"
->
+<div class="diff-modal-overlay" role="dialog" aria-modal="true" aria-label="XML diff viewer">
 	<div class="diff-modal">
 		<header class="diff-modal-header">
 			<div class="diff-modal-title">
@@ -50,7 +45,7 @@
 				<span class="diff-org-chip">{targetOrgLabel}</span>
 			</div>
 			<button
-				class="btn btn--ghost btn--icon  diff-modal-close"
+				class="btn btn--ghost btn--icon diff-modal-close"
 				type="button"
 				onclick={onClose}
 				aria-label="Close diff viewer"
@@ -75,7 +70,9 @@
 					>
 						<span class="diff-gutter" aria-hidden="true">
 							{#if line.sourceLineNum !== undefined}
-								<span class="diff-sign">{line.kind === "remove" || line.kind === "change" ? "-" : " "}</span>
+								<span class="diff-sign"
+									>{line.kind === "remove" || line.kind === "change" ? "-" : " "}</span
+								>
 								<span class="diff-linenum">{line.sourceLineNum}</span>
 							{/if}
 						</span>
@@ -87,7 +84,9 @@
 					>
 						<span class="diff-gutter" aria-hidden="true">
 							{#if line.targetLineNum !== undefined}
-								<span class="diff-sign">{line.kind === "add" || line.kind === "change" ? "+" : " "}</span>
+								<span class="diff-sign"
+									>{line.kind === "add" || line.kind === "change" ? "+" : " "}</span
+								>
 								<span class="diff-linenum">{line.targetLineNum}</span>
 							{/if}
 						</span>
@@ -98,6 +97,3 @@
 		</div>
 	</div>
 </div>
-
-
-

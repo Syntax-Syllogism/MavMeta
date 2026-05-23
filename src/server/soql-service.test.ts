@@ -5,33 +5,34 @@ import { SoqlService } from "./soql-service";
 describe("SoqlService", () => {
 	it("describeGlobal filters to queryable and sorts by label", async () => {
 		const service = new SoqlService({
-			connectionFactory: async () => ({
-				instanceUrl: "https://example.my.salesforce.com",
-				getApiVersion: () => "62.0",
-				describeGlobal: async () => ({
-					sobjects: [
-						{ name: "Contact", label: "Contact", queryable: true, custom: false },
-						{ name: "ApexLog", label: "Apex Log", queryable: false, custom: false },
-						{
-							name: "ApprovalSubmissionFeed",
-							label: "__MISSING LABEL__ PropertyFile - val ApprovalSubmission not found",
-							queryable: true,
-							custom: false,
-						},
-						{
-							name: "__MISSING LABEL__ FakeApiName",
-							label: "Missing label leaked into API name",
-							queryable: true,
-							custom: false,
-						},
-						{ name: "Account", label: "Account", queryable: true, custom: false },
-					],
-				}),
-				describe: vi.fn(),
-				query: vi.fn(),
-				queryMore: vi.fn(),
-				tooling: { describeGlobal: vi.fn(), describe: vi.fn(), query: vi.fn() },
-			}) as never,
+			connectionFactory: async () =>
+				({
+					instanceUrl: "https://example.my.salesforce.com",
+					getApiVersion: () => "62.0",
+					describeGlobal: async () => ({
+						sobjects: [
+							{ name: "Contact", label: "Contact", queryable: true, custom: false },
+							{ name: "ApexLog", label: "Apex Log", queryable: false, custom: false },
+							{
+								name: "ApprovalSubmissionFeed",
+								label: "__MISSING LABEL__ PropertyFile - val ApprovalSubmission not found",
+								queryable: true,
+								custom: false,
+							},
+							{
+								name: "__MISSING LABEL__ FakeApiName",
+								label: "Missing label leaked into API name",
+								queryable: true,
+								custom: false,
+							},
+							{ name: "Account", label: "Account", queryable: true, custom: false },
+						],
+					}),
+					describe: vi.fn(),
+					query: vi.fn(),
+					queryMore: vi.fn(),
+					tooling: { describeGlobal: vi.fn(), describe: vi.fn(), query: vi.fn() },
+				}) as never,
 		});
 
 		const response = await service.describeGlobal({ username: "u", api: "rest" });
@@ -45,19 +46,24 @@ describe("SoqlService", () => {
 		});
 		const service = new SoqlService({
 			fetcher: fetcher as never,
-			connectionFactory: async () => ({
-				instanceUrl: "https://example.my.salesforce.com",
-				getApiVersion: () => "62.0",
-				accessToken: "token",
-				describeGlobal: vi.fn(),
-				describe: vi.fn(),
-				query: vi.fn(),
-				queryMore: vi.fn(),
-				tooling: { describeGlobal: vi.fn(), describe: vi.fn(), query: vi.fn() },
-			}) as never,
+			connectionFactory: async () =>
+				({
+					instanceUrl: "https://example.my.salesforce.com",
+					getApiVersion: () => "62.0",
+					accessToken: "token",
+					describeGlobal: vi.fn(),
+					describe: vi.fn(),
+					query: vi.fn(),
+					queryMore: vi.fn(),
+					tooling: { describeGlobal: vi.fn(), describe: vi.fn(), query: vi.fn() },
+				}) as never,
 		});
 
-		const result = await service.validateQuery({ username: "u", api: "tooling", soql: "SELECT Id FROM ApexClass" });
+		const result = await service.validateQuery({
+			username: "u",
+			api: "tooling",
+			soql: "SELECT Id FROM ApexClass",
+		});
 		expect(result).toEqual({ valid: true });
 		expect(fetcher).toHaveBeenCalledWith(
 			"https://example.my.salesforce.com/services/data/v62.0/tooling/query/?q=SELECT%20Id%20FROM%20ApexClass%20LIMIT%201",
@@ -67,50 +73,65 @@ describe("SoqlService", () => {
 
 	it("runQuery strips attributes and paginates", async () => {
 		const service = new SoqlService({
-			connectionFactory: async () => ({
-				instanceUrl: "https://example.my.salesforce.com",
-				getApiVersion: () => "62.0",
-				describeGlobal: vi.fn(),
-				describe: vi.fn(),
-				query: async () => ({
-					records: [{ Id: "001", Name: "A", attributes: { type: "Account" } }],
-					totalSize: 2,
-					done: false,
-					nextRecordsUrl: "/next",
-				}),
-				queryMore: async () => ({
-					records: [{ Id: "002", Name: "B", attributes: { type: "Account" } }],
-					totalSize: 2,
-					done: true,
-				}),
-				tooling: { describeGlobal: vi.fn(), describe: vi.fn(), query: vi.fn() },
-			}) as never,
+			connectionFactory: async () =>
+				({
+					instanceUrl: "https://example.my.salesforce.com",
+					getApiVersion: () => "62.0",
+					describeGlobal: vi.fn(),
+					describe: vi.fn(),
+					query: async () => ({
+						records: [{ Id: "001", Name: "A", attributes: { type: "Account" } }],
+						totalSize: 2,
+						done: false,
+						nextRecordsUrl: "/next",
+					}),
+					queryMore: async () => ({
+						records: [{ Id: "002", Name: "B", attributes: { type: "Account" } }],
+						totalSize: 2,
+						done: true,
+					}),
+					tooling: { describeGlobal: vi.fn(), describe: vi.fn(), query: vi.fn() },
+				}) as never,
 		});
 
-		const result = await service.runQuery({ username: "u", api: "rest", soql: "SELECT Id, Name FROM Account", includeAllPages: true });
-		expect(result.records).toEqual([{ Id: "001", Name: "A" }, { Id: "002", Name: "B" }]);
+		const result = await service.runQuery({
+			username: "u",
+			api: "rest",
+			soql: "SELECT Id, Name FROM Account",
+			includeAllPages: true,
+		});
+		expect(result.records).toEqual([
+			{ Id: "001", Name: "A" },
+			{ Id: "002", Name: "B" },
+		]);
 	});
 
 	it("runQuery returns first page only when includeAllPages is not true", async () => {
 		const service = new SoqlService({
-			connectionFactory: async () => ({
-				instanceUrl: "https://example.my.salesforce.com",
-				getApiVersion: () => "62.0",
-				accessToken: "token",
-				describeGlobal: vi.fn(),
-				describe: vi.fn(),
-				query: async () => ({
-					records: [{ Id: "001", attributes: { type: "Account" } }],
-					totalSize: 20000,
-					done: false,
-					nextRecordsUrl: "/next",
-				}),
-				queryMore: vi.fn(),
-				tooling: { describeGlobal: vi.fn(), describe: vi.fn(), query: vi.fn() },
-			}) as never,
+			connectionFactory: async () =>
+				({
+					instanceUrl: "https://example.my.salesforce.com",
+					getApiVersion: () => "62.0",
+					accessToken: "token",
+					describeGlobal: vi.fn(),
+					describe: vi.fn(),
+					query: async () => ({
+						records: [{ Id: "001", attributes: { type: "Account" } }],
+						totalSize: 20000,
+						done: false,
+						nextRecordsUrl: "/next",
+					}),
+					queryMore: vi.fn(),
+					tooling: { describeGlobal: vi.fn(), describe: vi.fn(), query: vi.fn() },
+				}) as never,
 		});
 
-		const result = await service.runQuery({ username: "u", api: "rest", soql: "SELECT Id FROM Account", includeAllPages: false });
+		const result = await service.runQuery({
+			username: "u",
+			api: "rest",
+			soql: "SELECT Id FROM Account",
+			includeAllPages: false,
+		});
 		expect(result.records).toEqual([{ Id: "001" }]);
 		expect(result.nextRecordsUrl).toBe("/next");
 	});
@@ -132,16 +153,17 @@ describe("SoqlService", () => {
 			});
 
 		const service = new SoqlService({
-			connectionFactory: async () => ({
-				instanceUrl: "https://example.my.salesforce.com",
-				getApiVersion: () => "62.0",
-				accessToken: "token",
-				describeGlobal: vi.fn(),
-				describe: vi.fn(),
-				query,
-				queryMore,
-				tooling: { describeGlobal: vi.fn(), describe: vi.fn(), query: vi.fn() },
-			}) as never,
+			connectionFactory: async () =>
+				({
+					instanceUrl: "https://example.my.salesforce.com",
+					getApiVersion: () => "62.0",
+					accessToken: "token",
+					describeGlobal: vi.fn(),
+					describe: vi.fn(),
+					query,
+					queryMore,
+					tooling: { describeGlobal: vi.fn(), describe: vi.fn(), query: vi.fn() },
+				}) as never,
 		});
 
 		const result = await service.runQuery({
@@ -163,18 +185,24 @@ describe("SoqlService", () => {
 			done: true,
 		});
 		const service = new SoqlService({
-			connectionFactory: async () => ({
-				instanceUrl: "https://example.my.salesforce.com",
-				getApiVersion: () => "62.0",
-				describeGlobal: vi.fn(),
-				describe: vi.fn(),
-				query,
-				queryMore: vi.fn(),
-				tooling: { describeGlobal: vi.fn(), describe: vi.fn(), query: vi.fn() },
-			}) as never,
+			connectionFactory: async () =>
+				({
+					instanceUrl: "https://example.my.salesforce.com",
+					getApiVersion: () => "62.0",
+					describeGlobal: vi.fn(),
+					describe: vi.fn(),
+					query,
+					queryMore: vi.fn(),
+					tooling: { describeGlobal: vi.fn(), describe: vi.fn(), query: vi.fn() },
+				}) as never,
 		});
 
-		await service.runQuery({ username: "u", api: "rest", soql: "SELECT Id FROM Account LIMIT 50", previewLimit: 5 });
+		await service.runQuery({
+			username: "u",
+			api: "rest",
+			soql: "SELECT Id FROM Account LIMIT 50",
+			previewLimit: 5,
+		});
 		expect(query).toHaveBeenCalledWith("SELECT Id FROM Account LIMIT 5");
 	});
 
@@ -185,19 +213,24 @@ describe("SoqlService", () => {
 		});
 		const service = new SoqlService({
 			fetcher: fetcher as never,
-			connectionFactory: async () => ({
-				instanceUrl: "https://example.my.salesforce.com",
-				getApiVersion: () => "62.0",
-				accessToken: "token",
-				describeGlobal: vi.fn(),
-				describe: vi.fn(),
-				query: vi.fn(),
-				queryMore: vi.fn(),
-				tooling: { describeGlobal: vi.fn(), describe: vi.fn(), query: vi.fn() },
-			}) as never,
+			connectionFactory: async () =>
+				({
+					instanceUrl: "https://example.my.salesforce.com",
+					getApiVersion: () => "62.0",
+					accessToken: "token",
+					describeGlobal: vi.fn(),
+					describe: vi.fn(),
+					query: vi.fn(),
+					queryMore: vi.fn(),
+					tooling: { describeGlobal: vi.fn(), describe: vi.fn(), query: vi.fn() },
+				}) as never,
 		});
 
-		await service.validateQuery({ username: "u", api: "tooling", soql: "SELECT Id FROM Account FOR UPDATE" });
+		await service.validateQuery({
+			username: "u",
+			api: "tooling",
+			soql: "SELECT Id FROM Account FOR UPDATE",
+		});
 		expect(fetcher).toHaveBeenCalledWith(
 			"https://example.my.salesforce.com/services/data/v62.0/tooling/query/?q=SELECT%20Id%20FROM%20Account%20LIMIT%201%20FOR%20UPDATE",
 			expect.objectContaining({ method: "GET" }),
@@ -217,16 +250,17 @@ describe("SoqlService", () => {
 		const queryMore = vi.fn();
 		const service = new SoqlService({
 			fetcher: fetcher as never,
-			connectionFactory: async () => ({
-				instanceUrl: "https://example.my.salesforce.com",
-				getApiVersion: () => "62.0",
-				accessToken: "token",
-				describeGlobal: vi.fn(),
-				describe: vi.fn(),
-				query: vi.fn(),
-				queryMore,
-				tooling: { describeGlobal: vi.fn(), describe: vi.fn(), query: vi.fn() },
-			}) as never,
+			connectionFactory: async () =>
+				({
+					instanceUrl: "https://example.my.salesforce.com",
+					getApiVersion: () => "62.0",
+					accessToken: "token",
+					describeGlobal: vi.fn(),
+					describe: vi.fn(),
+					query: vi.fn(),
+					queryMore,
+					tooling: { describeGlobal: vi.fn(), describe: vi.fn(), query: vi.fn() },
+				}) as never,
 		});
 
 		const result = await service.runQuery({
@@ -240,4 +274,3 @@ describe("SoqlService", () => {
 		expect(queryMore).not.toHaveBeenCalled();
 	});
 });
-

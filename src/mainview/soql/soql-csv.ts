@@ -2,11 +2,16 @@
 	if (!records.length) return "";
 	const columns = Array.from(new Set(records.flatMap((record) => Object.keys(record))));
 	const header = columns.join(",");
-	const rows = records.map((record) => columns.map((column) => escapeCsvCell(record[column])).join(","));
+	const rows = records.map((record) =>
+		columns.map((column) => escapeCsvCell(record[column])).join(","),
+	);
 	return [header, ...rows].join("\n");
 }
 
-export function parseCsv(csv: string, options: { parseScalars?: boolean } = {}): Record<string, unknown>[] {
+export function parseCsv(
+	csv: string,
+	options: { parseScalars?: boolean } = {},
+): Record<string, unknown>[] {
 	const rows = parseCsvRows(csv);
 	if (!rows.length) return [];
 	const [headerRow, ...dataRows] = rows;

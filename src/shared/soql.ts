@@ -57,4 +57,3 @@ export type BulkQueryStatusResponse = {
 };
 
 export type BulkQueryResultRequest = { username: string; jobId: string };
-

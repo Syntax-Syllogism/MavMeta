@@ -26,7 +26,13 @@ type QueryResponse = {
 };
 
 type DescribeGlobalRaw = {
-	sobjects?: Array<{ name?: string; label?: string; custom?: boolean; queryable?: boolean; keyPrefix?: string }>;
+	sobjects?: Array<{
+		name?: string;
+		label?: string;
+		custom?: boolean;
+		queryable?: boolean;
+		keyPrefix?: string;
+	}>;
 };
 
 type DescribeObjectRaw = {
@@ -98,9 +104,10 @@ export class SoqlService implements SoqlServiceApi {
 		if (cached) return cached;
 
 		const connection = await this.connectionFactory(request.username);
-		const raw = request.api === "tooling"
-			? await connection.tooling.describeGlobal()
-			: await connection.describeGlobal();
+		const raw =
+			request.api === "tooling"
+				? await connection.tooling.describeGlobal()
+				: await connection.describeGlobal();
 		const sobjects = (raw.sobjects ?? [])
 			.filter((sobject) => {
 				if (sobject.queryable !== true || typeof sobject.name !== "string") return false;
@@ -127,9 +134,10 @@ export class SoqlService implements SoqlServiceApi {
 		if (cached) return cached;
 
 		const connection = await this.connectionFactory(request.username);
-		const raw = request.api === "tooling"
-			? await connection.tooling.describe(request.sobject)
-			: await connection.describe(request.sobject);
+		const raw =
+			request.api === "tooling"
+				? await connection.tooling.describe(request.sobject)
+				: await connection.describe(request.sobject);
 		const response = {
 			sobject: request.sobject,
 			fields: (raw.fields ?? [])
@@ -201,7 +209,11 @@ export class SoqlService implements SoqlServiceApi {
 		const connection = await this.connectionFactory(request.username);
 		if (request.nextRecordsUrl) {
 			if (request.api === "tooling") {
-				throw new ApiError(400, "TOOLING_QUERYMORE_UNSUPPORTED", "Tooling API pagination is not supported for this object. Add LIMIT to keep results in one batch.");
+				throw new ApiError(
+					400,
+					"TOOLING_QUERYMORE_UNSUPPORTED",
+					"Tooling API pagination is not supported for this object. Add LIMIT to keep results in one batch.",
+				);
 			}
 			let page = await connection.queryMore(request.nextRecordsUrl);
 			let records = sanitizeRecords(page.records);
@@ -221,10 +233,13 @@ export class SoqlService implements SoqlServiceApi {
 			};
 		}
 
-		const queryText = request.previewLimit ? applyPreviewLimit(request.soql, request.previewLimit) : request.soql;
-		const firstPage = request.api === "tooling"
-			? await runToolingQuery(connection, queryText, this.fetcher)
-			: await connection.query(queryText);
+		const queryText = request.previewLimit
+			? applyPreviewLimit(request.soql, request.previewLimit)
+			: request.soql;
+		const firstPage =
+			request.api === "tooling"
+				? await runToolingQuery(connection, queryText, this.fetcher)
+				: await connection.query(queryText);
 
 		if (request.previewLimit) {
 			const records = sanitizeRecords(firstPage.records).slice(0, request.previewLimit);
@@ -274,7 +289,11 @@ export class SoqlService implements SoqlServiceApi {
 	async startBulkQuery(request: StartBulkQueryRequest): Promise<StartBulkQueryResponse> {
 		const connection = await this.connectionFactory(request.username);
 		if (!connection.bulk2) {
-			throw new ApiError(400, "BULK_UNAVAILABLE", "Bulk API is unavailable for this org connection.");
+			throw new ApiError(
+				400,
+				"BULK_UNAVAILABLE",
+				"Bulk API is unavailable for this org connection.",
+			);
 		}
 		const started = await connection.bulk2.query(request.soql);
 		const jobId = typeof started === "string" ? started : started.id;
@@ -287,7 +306,11 @@ export class SoqlService implements SoqlServiceApi {
 	async getBulkQueryStatus(request: BulkQueryStatusRequest): Promise<BulkQueryStatusResponse> {
 		const connection = await this.connectionFactory(request.username);
 		if (!connection.bulk2) {
-			throw new ApiError(400, "BULK_UNAVAILABLE", "Bulk API is unavailable for this org connection.");
+			throw new ApiError(
+				400,
+				"BULK_UNAVAILABLE",
+				"Bulk API is unavailable for this org connection.",
+			);
 		}
 		const status = await connection.bulk2.job(request.jobId).check();
 		return {
@@ -300,7 +323,11 @@ export class SoqlService implements SoqlServiceApi {
 	async getBulkQueryResult(request: BulkQueryResultRequest): Promise<string> {
 		const connection = await this.connectionFactory(request.username);
 		if (!connection.bulk2) {
-			throw new ApiError(400, "BULK_UNAVAILABLE", "Bulk API is unavailable for this org connection.");
+			throw new ApiError(
+				400,
+				"BULK_UNAVAILABLE",
+				"Bulk API is unavailable for this org connection.",
+			);
 		}
 		return connection.bulk2.job(request.jobId).result();
 	}
@@ -385,4 +412,3 @@ async function readFetchError(response: Response): Promise<string> {
 		return `Validation failed (${response.status}).`;
 	}
 }
-

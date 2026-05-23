@@ -131,9 +131,7 @@ describe("LwcService.getBundle", () => {
 	});
 
 	it("throws 404 when bundle not found", async () => {
-		tooling.query
-			.mockResolvedValueOnce({ records: [] })
-			.mockResolvedValueOnce({ records: [] });
+		tooling.query.mockResolvedValueOnce({ records: [] }).mockResolvedValueOnce({ records: [] });
 
 		await expect(
 			service.getBundle({ orgUsername: "user@example.com", bundleId: BUNDLE_ID }),
@@ -161,7 +159,9 @@ describe("LwcService.deployBundle", () => {
 		// Default happy path: conflict check (not newer) → resources → post-deploy date
 		tooling.query
 			.mockResolvedValueOnce({ records: [{ LastModifiedDate: expectedDate }] })
-			.mockResolvedValueOnce({ records: [{ Id: RESOURCE_ID, FilePath: "lwc/helloWorld/helloWorld.js" }] })
+			.mockResolvedValueOnce({
+				records: [{ Id: RESOURCE_ID, FilePath: "lwc/helloWorld/helloWorld.js" }],
+			})
 			.mockResolvedValueOnce({ records: [{ LastModifiedDate: "2024-01-01T00:01:00.000Z" }] });
 	});
 
@@ -223,7 +223,9 @@ describe("LwcService.deployBundle", () => {
 		tooling.query
 			.mockReset()
 			// Existing resources (no conflict query)
-			.mockResolvedValueOnce({ records: [{ Id: RESOURCE_ID, FilePath: "lwc/helloWorld/helloWorld.js" }] })
+			.mockResolvedValueOnce({
+				records: [{ Id: RESOURCE_ID, FilePath: "lwc/helloWorld/helloWorld.js" }],
+			})
 			// Post-deploy date
 			.mockResolvedValueOnce({ records: [{ LastModifiedDate: "2024-01-01T00:01:00.000Z" }] });
 
@@ -238,11 +240,15 @@ describe("LwcService.deployBundle", () => {
 		tooling.query
 			.mockReset()
 			.mockResolvedValueOnce({ records: [{ LastModifiedDate: expectedDate }] })
-			.mockResolvedValueOnce({ records: [{ Id: RESOURCE_ID, FilePath: "lwc/helloWorld/helloWorld.js" }] });
+			.mockResolvedValueOnce({
+				records: [{ Id: RESOURCE_ID, FilePath: "lwc/helloWorld/helloWorld.js" }],
+			});
 
-		tooling.sobject("LightningComponentResource").update.mockRejectedValue(
-			new Error("LWC1099: 'badVar' is not defined.\n  lwc/helloWorld/helloWorld.js:5:3"),
-		);
+		tooling
+			.sobject("LightningComponentResource")
+			.update.mockRejectedValue(
+				new Error("LWC1099: 'badVar' is not defined.\n  lwc/helloWorld/helloWorld.js:5:3"),
+			);
 
 		const result = await service.deployBundle(deployRequest);
 
@@ -261,11 +267,13 @@ describe("LwcService.deployBundle", () => {
 		tooling.query
 			.mockReset()
 			.mockResolvedValueOnce({ records: [{ LastModifiedDate: expectedDate }] })
-			.mockResolvedValueOnce({ records: [{ Id: RESOURCE_ID, FilePath: "lwc/helloWorld/helloWorld.js" }] });
+			.mockResolvedValueOnce({
+				records: [{ Id: RESOURCE_ID, FilePath: "lwc/helloWorld/helloWorld.js" }],
+			});
 
-		tooling.sobject("LightningComponentResource").update.mockRejectedValue(
-			new Error("UNKNOWN_EXCEPTION: Something went wrong"),
-		);
+		tooling
+			.sobject("LightningComponentResource")
+			.update.mockRejectedValue(new Error("UNKNOWN_EXCEPTION: Something went wrong"));
 
 		const result = await service.deployBundle(deployRequest);
 

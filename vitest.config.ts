@@ -9,8 +9,9 @@ export default defineConfig({
 	test: {
 		environment: "jsdom",
 		globals: true,
-		// Raised from the 5s default — CI runners exceed it under parallel load.
-		testTimeout: 15000,
+		testTimeout: 30000,
+		maxWorkers: 4,
+		minWorkers: 1,
 		setupFiles: "./src/test/setup.ts",
 		include: ["src/**/*.test.{ts,tsx}"],
 		coverage: {

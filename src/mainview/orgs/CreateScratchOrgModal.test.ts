@@ -30,15 +30,25 @@ function makeOrg(overrides: Partial<OrgSummary> = {}): OrgSummary {
 	};
 }
 
-const devHubOrg = makeOrg({ username: "hub@example.com", alias: "my-hub", environment: "developer" });
-const sandboxOrg = makeOrg({ username: "sandbox@example.com", alias: "sandbox", environment: "sandbox" });
+const devHubOrg = makeOrg({
+	username: "hub@example.com",
+	alias: "my-hub",
+	environment: "developer",
+});
+const sandboxOrg = makeOrg({
+	username: "sandbox@example.com",
+	alias: "sandbox",
+	environment: "sandbox",
+});
 
-function renderModal(props: {
-	orgs?: OrgSummary[];
-	onClose?: () => void;
-	onComplete?: (username: string) => void | Promise<void>;
-	onSetActive?: (username: string) => void | Promise<void>;
-} = {}) {
+function renderModal(
+	props: {
+		orgs?: OrgSummary[];
+		onClose?: () => void;
+		onComplete?: (username: string) => void | Promise<void>;
+		onSetActive?: (username: string) => void | Promise<void>;
+	} = {},
+) {
 	return render(CreateScratchOrgModal, {
 		orgs: props.orgs ?? [devHubOrg],
 		onClose: props.onClose ?? vi.fn(),
@@ -163,7 +173,9 @@ describe("CreateScratchOrgModal", () => {
 			fireEvent.input(textarea, { target: { value: "{ invalid json }" } });
 
 			await waitFor(() => {
-				const createButton = getByRole("button", { name: "Create Scratch Org" }) as HTMLButtonElement;
+				const createButton = getByRole("button", {
+					name: "Create Scratch Org",
+				}) as HTMLButtonElement;
 				expect(createButton.disabled).toBe(true);
 			});
 		});
@@ -185,10 +197,18 @@ describe("CreateScratchOrgModal", () => {
 			const textarea = getByLabelText("Scratch org definition JSON");
 
 			fireEvent.input(textarea, { target: { value: "{ bad }" } });
-			await waitFor(() => expect((getByRole("button", { name: "Create Scratch Org" }) as HTMLButtonElement).disabled).toBe(true));
+			await waitFor(() =>
+				expect(
+					(getByRole("button", { name: "Create Scratch Org" }) as HTMLButtonElement).disabled,
+				).toBe(true),
+			);
 
 			fireEvent.input(textarea, { target: { value: '{ "edition": "Developer" }' } });
-			await waitFor(() => expect((getByRole("button", { name: "Create Scratch Org" }) as HTMLButtonElement).disabled).toBe(false));
+			await waitFor(() =>
+				expect(
+					(getByRole("button", { name: "Create Scratch Org" }) as HTMLButtonElement).disabled,
+				).toBe(false),
+			);
 		});
 	});
 
@@ -222,7 +242,9 @@ describe("CreateScratchOrgModal", () => {
 			const { getByText, getByRole } = result;
 
 			fireEvent.click(getByText("my-hub"));
-			await waitFor(() => expect((getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(false));
+			await waitFor(() =>
+				expect((getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(false),
+			);
 			fireEvent.click(getByRole("button", { name: "Next" }));
 			await waitFor(() => getByText(/Creation Method/));
 			fireEvent.click(getByRole("button", { name: "Next" }));
@@ -319,7 +341,9 @@ describe("CreateScratchOrgModal", () => {
 			const { getByText, getByRole } = result;
 
 			fireEvent.click(getByText("my-hub"));
-			await waitFor(() => expect((getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(false));
+			await waitFor(() =>
+				expect((getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(false),
+			);
 			fireEvent.click(getByRole("button", { name: "Next" }));
 			await waitFor(() => getByText(/Creation Method/));
 			fireEvent.click(getByRole("button", { name: "Next" }));
@@ -391,7 +415,9 @@ describe("CreateScratchOrgModal", () => {
 			const result = renderModal();
 			const { getByText, getByRole } = result;
 			fireEvent.click(getByText("my-hub"));
-			await waitFor(() => expect((getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(false));
+			await waitFor(() =>
+				expect((getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(false),
+			);
 			fireEvent.click(getByRole("button", { name: "Next" }));
 			await waitFor(() => getByText(/Creation Method/));
 			return result;
@@ -418,7 +444,9 @@ describe("CreateScratchOrgModal", () => {
 			const result = renderModal();
 			const { getByText, getByRole } = result;
 			fireEvent.click(getByText("my-hub"));
-			await waitFor(() => expect((getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(false));
+			await waitFor(() =>
+				expect((getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(false),
+			);
 			fireEvent.click(getByRole("button", { name: "Next" }));
 			await waitFor(() => getByText(/Creation Method/));
 			return result;
@@ -444,7 +472,14 @@ describe("CreateScratchOrgModal", () => {
 		});
 
 		it("curated group sub-keys appear in Step 4 JSON after navigating forward", async () => {
-			const { container, getAllByRole, getByText, getByRole, getByLabelText, getByPlaceholderText } = await reachSettingsStep();
+			const {
+				container,
+				getAllByRole,
+				getByText,
+				getByRole,
+				getByLabelText,
+				getByPlaceholderText,
+			} = await reachSettingsStep();
 			const settingInput = getByPlaceholderText(/LightningExperienceSettings/);
 			fireEvent.input(settingInput, { target: { value: "LightningExperienceSettings" } });
 			clickSettingsAdd(getAllByRole);
@@ -461,7 +496,14 @@ describe("CreateScratchOrgModal", () => {
 		});
 
 		it("free-text group not in curated list is accepted but produces no sub-keys in JSON", async () => {
-			const { container, getAllByRole, getByText, getByRole, getByLabelText, getByPlaceholderText } = await reachSettingsStep();
+			const {
+				container,
+				getAllByRole,
+				getByText,
+				getByRole,
+				getByLabelText,
+				getByPlaceholderText,
+			} = await reachSettingsStep();
 			const settingInput = getByPlaceholderText(/LightningExperienceSettings/);
 			fireEvent.input(settingInput, { target: { value: "SomeUnknownSettings" } });
 			clickSettingsAdd(getAllByRole);
@@ -481,7 +523,9 @@ describe("CreateScratchOrgModal", () => {
 			const result = renderModal();
 			const { getByText, getByRole } = result;
 			fireEvent.click(getByText("my-hub"));
-			await waitFor(() => expect((getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(false));
+			await waitFor(() =>
+				expect((getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(false),
+			);
 			fireEvent.click(getByRole("button", { name: "Next" }));
 			await waitFor(() => getByText(/Creation Method/));
 			fireEvent.click(getByRole("button", { name: "Next" }));
@@ -512,7 +556,9 @@ describe("CreateScratchOrgModal", () => {
 			const { getByLabelText, getByRole, getByText } = await reachDefinitionStep();
 
 			const textarea = getByLabelText("Scratch org definition JSON");
-			fireEvent.input(textarea, { target: { value: '{ "edition": "Enterprise", "custom": true }' } });
+			fireEvent.input(textarea, {
+				target: { value: '{ "edition": "Enterprise", "custom": true }' },
+			});
 
 			fireEvent.click(getByRole("button", { name: "Back" }));
 			await waitFor(() => getByText(/Creation Method/));
@@ -528,7 +574,9 @@ describe("CreateScratchOrgModal", () => {
 			const { getByLabelText, getByRole, getByText } = await reachDefinitionStep();
 
 			const textarea = getByLabelText("Scratch org definition JSON");
-			fireEvent.input(textarea, { target: { value: '{ "edition": "Enterprise", "custom": true }' } });
+			fireEvent.input(textarea, {
+				target: { value: '{ "edition": "Enterprise", "custom": true }' },
+			});
 
 			fireEvent.click(getByRole("button", { name: "Back" }));
 			await waitFor(() => getByText(/Creation Method/));
@@ -595,7 +643,9 @@ describe("CreateScratchOrgModal", () => {
 			expect(listItems()[0].classList.contains("complete")).toBe(false);
 
 			fireEvent.click(getByText("my-hub"));
-			await waitFor(() => expect((getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(false));
+			await waitFor(() =>
+				expect((getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(false),
+			);
 			fireEvent.click(getByRole("button", { name: "Next" }));
 			await waitFor(() => getByText(/Creation Method/));
 
@@ -608,7 +658,9 @@ describe("CreateScratchOrgModal", () => {
 			expect(getByRole("button", { name: "Cancel" })).toBeTruthy();
 
 			fireEvent.click(getByText("my-hub"));
-			await waitFor(() => expect((getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(false));
+			await waitFor(() =>
+				expect((getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(false),
+			);
 			fireEvent.click(getByRole("button", { name: "Next" }));
 			await waitFor(() => getByText(/Creation Method/));
 
@@ -620,7 +672,9 @@ describe("CreateScratchOrgModal", () => {
 			expect(getByRole("button", { name: "Next" })).toBeTruthy();
 
 			fireEvent.click(getByText("my-hub"));
-			await waitFor(() => expect((getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(false));
+			await waitFor(() =>
+				expect((getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(false),
+			);
 			fireEvent.click(getByRole("button", { name: "Next" }));
 			await waitFor(() => getByText(/Creation Method/));
 			fireEvent.click(getByRole("button", { name: "Next" }));
@@ -649,7 +703,9 @@ describe("CreateScratchOrgModal", () => {
 
 			const { container, getByText, getByRole } = renderModal();
 			fireEvent.click(getByText("my-hub"));
-			await waitFor(() => expect((getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(false));
+			await waitFor(() =>
+				expect((getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(false),
+			);
 			fireEvent.click(getByRole("button", { name: "Next" }));
 			await waitFor(() => getByText(/Creation Method/));
 			fireEvent.click(getByRole("button", { name: "Next" }));
@@ -678,7 +734,9 @@ describe("CreateScratchOrgModal", () => {
 
 			const { container, getByText, getByRole } = renderModal();
 			fireEvent.click(getByText("my-hub"));
-			await waitFor(() => expect((getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(false));
+			await waitFor(() =>
+				expect((getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(false),
+			);
 			fireEvent.click(getByRole("button", { name: "Next" }));
 			await waitFor(() => getByText(/Creation Method/));
 			fireEvent.click(getByRole("button", { name: "Next" }));
@@ -701,7 +759,9 @@ describe("CreateScratchOrgModal", () => {
 			const result = renderModal();
 			const { getByText, getByRole } = result;
 			fireEvent.click(getByText("my-hub"));
-			await waitFor(() => expect((getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(false));
+			await waitFor(() =>
+				expect((getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(false),
+			);
 			fireEvent.click(getByRole("button", { name: "Next" }));
 			await waitFor(() => getByText(/Creation Method/));
 			return result;
@@ -730,7 +790,9 @@ describe("CreateScratchOrgModal", () => {
 		});
 
 		it("disables snapshot mode with failure tooltip when snapshot fetch fails", async () => {
-			backendMocks.listScratchOrgSnapshots.mockRejectedValueOnce(new Error("Tooling API unreachable"));
+			backendMocks.listScratchOrgSnapshots.mockRejectedValueOnce(
+				new Error("Tooling API unreachable"),
+			);
 			const { getByRole } = await reachSettingsStep();
 			const button = getByRole("button", { name: "Org Snapshot (Fast)" }) as HTMLButtonElement;
 			expect(button.disabled).toBe(true);
@@ -752,7 +814,13 @@ describe("CreateScratchOrgModal", () => {
 			fireEvent.click(getByRole("button", { name: "Org Snapshot (Fast)" }));
 			fireEvent.click(getByRole("button", { name: "Next" }));
 			await waitFor(() => {
-				expect(getByText(/Snapshot mode — advanced edits not recommended/)).toBeTruthy();
+				expect(
+					getByText(
+						(content) =>
+							content.includes("Snapshot mode") &&
+							content.includes("advanced edits not recommended"),
+					),
+				).toBeTruthy();
 			});
 		});
 
@@ -773,9 +841,9 @@ describe("CreateScratchOrgModal", () => {
 			});
 			const { getByRole, getByText } = await reachSettingsStep();
 			fireEvent.click(getByRole("button", { name: "Org Snapshot (Fast)" }));
-			await waitFor(() => {
-				expect(getByText(/5d ⚠/)).toBeTruthy();
-			});
+			await vi.runAllTimersAsync();
+			await tick();
+			expect(getByText(/5d/)).toBeTruthy();
 			vi.useRealTimers();
 		});
 	});

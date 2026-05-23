@@ -33,7 +33,8 @@ export function buildSoql(state: SoqlBuilderState): string {
 		})
 		.filter((clause) => clause.length > 0);
 	if (where.length) clauses.push(`WHERE ${where.join(` ${state.filterLogic} `)}`);
-	if (state.orderBy?.field) clauses.push(`ORDER BY ${state.orderBy.field} ${state.orderBy.direction}`);
+	if (state.orderBy?.field)
+		clauses.push(`ORDER BY ${state.orderBy.field} ${state.orderBy.direction}`);
 	if (state.limit && state.limit > 0) clauses.push(`LIMIT ${state.limit}`);
 	return clauses.join(" ");
 }
@@ -49,15 +50,17 @@ function formatValue(value: string, fieldType?: string): string {
 }
 
 function isStringLikeType(type: string): boolean {
-	return type === "string"
-		|| type === "textarea"
-		|| type === "email"
-		|| type === "phone"
-		|| type === "url"
-		|| type === "id"
-		|| type === "reference"
-		|| type === "picklist"
-		|| type === "multipicklist";
+	return (
+		type === "string" ||
+		type === "textarea" ||
+		type === "email" ||
+		type === "phone" ||
+		type === "url" ||
+		type === "id" ||
+		type === "reference" ||
+		type === "picklist" ||
+		type === "multipicklist"
+	);
 }
 
 function isDateLikeType(type: string): boolean {

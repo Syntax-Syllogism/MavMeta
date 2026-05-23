@@ -11,9 +11,9 @@
 	let {
 		activeOrg,
 		isLoadingMetadataTypes,
-		onLoadMetadataTypes,
+		onLoadMetadataTypes: _onLoadMetadataTypes,
 		metadataTypeFilter = $bindable(),
-		metadataApiVersion,
+		metadataApiVersion: _metadataApiVersion,
 		metadataTypes,
 		visibleMetadataTypes,
 		selectedMetadataTypeXmlName,
@@ -112,7 +112,11 @@
 			<div class="metadata-toolbar">
 				<label class="filter-input">
 					Filter Types
-					<input bind:value={metadataTypeFilter} autocomplete="off" placeholder="ApexClass, CustomObject, Flow..." />
+					<input
+						bind:value={metadataTypeFilter}
+						autocomplete="off"
+						placeholder="ApexClass, CustomObject, Flow..."
+					/>
 				</label>
 			</div>
 			{#if isLoadingMetadataTypes}
@@ -133,7 +137,10 @@
 								class:active-row={metadataType.xmlName === selectedMetadataTypeXmlName}
 								type="button"
 								onclick={() => {
-									if (selectedMetadataTypeXmlName === metadataType.xmlName && metadataComponents.length > 0) {
+									if (
+										selectedMetadataTypeXmlName === metadataType.xmlName &&
+										metadataComponents.length > 0
+									) {
 										return;
 									}
 									onListMetadataComponents(metadataType);
@@ -172,208 +179,314 @@
 	</div>
 
 	<!-- RIGHT: component explorer -->
-	<section class="component-explorer" class:inspector-expanded={isMetadataInspectorExpanded && !!selectedMetadataComponent} aria-label="Metadata component explorer">
-				{#if isLoadingMetadataComponents}
-					<div class="empty-state">
-						<h3>Listing components</h3>
-						<p>MavMeta is reading component summaries for the selected metadata type.</p>
-					</div>
-				{:else if metadataComponents.length}
-					<div class="explorer-inspector-pane">
-						<aside class="component-inspector" aria-label="Component details">
-							{#if selectedMetadataComponent}
-								<header class="inspector-header">
-									<button
-										class="inspector-toggle"
-										type="button"
-										onclick={() => (isMetadataInspectorExpanded = !isMetadataInspectorExpanded)}
-										aria-expanded={isMetadataInspectorExpanded}
+	<section
+		class="component-explorer"
+		class:inspector-expanded={isMetadataInspectorExpanded && !!selectedMetadataComponent}
+		aria-label="Metadata component explorer"
+	>
+		{#if isLoadingMetadataComponents}
+			<div class="empty-state">
+				<h3>Listing components</h3>
+				<p>MavMeta is reading component summaries for the selected metadata type.</p>
+			</div>
+		{:else if metadataComponents.length}
+			<div class="explorer-inspector-pane">
+				<aside class="component-inspector" aria-label="Component details">
+					{#if selectedMetadataComponent}
+						<header class="inspector-header">
+							<button
+								class="inspector-toggle"
+								type="button"
+								onclick={() => (isMetadataInspectorExpanded = !isMetadataInspectorExpanded)}
+								aria-expanded={isMetadataInspectorExpanded}
+							>
+								<span class="chevron">{isMetadataInspectorExpanded ? "▾" : "▸"}</span>
+								<div class="inspector-title">
+									<p class="eyebrow">{selectedMetadataComponent.type}</p>
+									<h3 title={selectedMetadataComponent.fullName}>
+										{selectedMetadataComponent.fullName}
+									</h3>
+								</div>
+							</button>
+							<div class="inspector-actions">
+								<button
+									class="btn btn--ghost btn--compact"
+									type="button"
+									onclick={() => onListMetadataComponents(undefined, true)}
+									disabled={isLoadingMetadataComponents}
+									title="Refresh component list from org"
+								>
+									Refresh
+								</button>
+							</div>
+						</header>
+						{#if isMetadataInspectorExpanded}
+							<div class="inspector-content">
+								<dl>
+									<div>
+										<dt>Type</dt>
+										<dd>{selectedMetadataComponent.type}</dd>
+									</div>
+									<div>
+										<dt>Label</dt>
+										<dd>{formatMetadataDetailValue(selectedMetadataComponent.label)}</dd>
+									</div>
+									<div>
+										<dt>Developer Name</dt>
+										<dd>{formatMetadataDetailValue(selectedMetadataComponent.developerName)}</dd>
+									</div>
+									<div>
+										<dt>Group</dt>
+										<dd>{getMetadataComponentGroupName(selectedMetadataComponent)}</dd>
+									</div>
+									<div>
+										<dt>ID</dt>
+										<dd>{formatMetadataDetailValue(selectedMetadataComponent.id)}</dd>
+									</div>
+									<div>
+										<dt>Manageable State</dt>
+										<dd>{formatMetadataDetailValue(selectedMetadataComponent.manageableState)}</dd>
+									</div>
+									<div>
+										<dt>Last Modified By</dt>
+										<dd>
+											{formatMetadataDetailValue(selectedMetadataComponent.lastModifiedByName)}
+										</dd>
+									</div>
+									<div>
+										<dt>Last Modified Date</dt>
+										<dd>{formatMetadataDetailValue(selectedMetadataComponent.lastModifiedDate)}</dd>
+									</div>
+								</dl>
+								<div class="raw-views">
+									<details class="raw-detail">
+										<summary>Raw JSON</summary>
+										<pre>{formatRawMetadata(selectedMetadataComponent)}</pre>
+									</details>
+									<details
+										class="raw-detail"
+										open={isXmlSectionOpen}
+										ontoggle={(e) =>
+											(isXmlSectionOpen = (e.currentTarget as HTMLDetailsElement).open)}
 									>
-              <span class="chevron">{isMetadataInspectorExpanded ? "▾" : "▸"}</span>
-										<div class="inspector-title">
-											<p class="eyebrow">{selectedMetadataComponent.type}</p>
-											<h3 title={selectedMetadataComponent.fullName}>
-												{selectedMetadataComponent.fullName}
-											</h3>
-										</div>
-									</button>
-									<div class="inspector-actions">
-										<button
-											class="btn btn--ghost btn--compact"
-											type="button"
-											onclick={() => onListMetadataComponents(undefined, true)}
-											disabled={isLoadingMetadataComponents}
-											title="Refresh component list from org"
-										>
-											Refresh
-										</button>
-									</div>
-								</header>
-								{#if isMetadataInspectorExpanded}
-									<div class="inspector-content">
-										<dl>
-											<div><dt>Type</dt><dd>{selectedMetadataComponent.type}</dd></div>
-											<div><dt>Label</dt><dd>{formatMetadataDetailValue(selectedMetadataComponent.label)}</dd></div>
-											<div><dt>Developer Name</dt><dd>{formatMetadataDetailValue(selectedMetadataComponent.developerName)}</dd></div>
-											<div><dt>Group</dt><dd>{getMetadataComponentGroupName(selectedMetadataComponent)}</dd></div>
-											<div><dt>ID</dt><dd>{formatMetadataDetailValue(selectedMetadataComponent.id)}</dd></div>
-											<div><dt>Manageable State</dt><dd>{formatMetadataDetailValue(selectedMetadataComponent.manageableState)}</dd></div>
-											<div><dt>Last Modified By</dt><dd>{formatMetadataDetailValue(selectedMetadataComponent.lastModifiedByName)}</dd></div>
-											<div><dt>Last Modified Date</dt><dd>{formatMetadataDetailValue(selectedMetadataComponent.lastModifiedDate)}</dd></div>
-										</dl>
-										<div class="raw-views">
-											<details class="raw-detail">
-												<summary>Raw JSON</summary>
-												<pre>{formatRawMetadata(selectedMetadataComponent)}</pre>
-											</details>
-											<details class="raw-detail" open={isXmlSectionOpen} ontoggle={(e) => isXmlSectionOpen = (e.currentTarget as HTMLDetailsElement).open}>
-												<summary>View Source</summary>
-												<div class="source-view-container">
-													{#if isLoadingComponentSource}
-														<div class="placeholder-view">
-															<div class="spinner"></div>
-															<p class="muted">Loading component source...</p>
-														</div>
-													{:else if componentSourceError}
-														<div class="placeholder-view">
-															<p class="danger-text">{componentSourceError}</p>
-														</div>
-													{:else if componentSource}
-														<pre class="source-view"><code>{componentSource}</code></pre>
-													{:else}
-														<div class="placeholder-view">
-															<p class="muted">Open to load source XML.</p>
-														</div>
-													{/if}
+										<summary>View Source</summary>
+										<div class="source-view-container">
+											{#if isLoadingComponentSource}
+												<div class="placeholder-view">
+													<div class="spinner"></div>
+													<p class="muted">Loading component source...</p>
 												</div>
-											</details>
+											{:else if componentSourceError}
+												<div class="placeholder-view">
+													<p class="danger-text">{componentSourceError}</p>
+												</div>
+											{:else if componentSource}
+												<pre class="source-view"><code>{componentSource}</code></pre>
+											{:else}
+												<div class="placeholder-view">
+													<p class="muted">Open to load source XML.</p>
+												</div>
+											{/if}
 										</div>
-									</div>
-								{/if}
-							{:else}
-								<div class="empty-state compact-empty">
-									<p>Select a component to inspect details.</p>
-									<button class="btn btn--ghost btn--compact" type="button" onclick={() => onListMetadataComponents(undefined, true)} disabled={isLoadingMetadataComponents}>
-										Refresh List
-									</button>
+									</details>
 								</div>
-							{/if}
-						</aside>
-					</div>
-
-					<div class="explorer-list-pane">
-						<div class="explorer-toolbar">
-							<label>
-								Filter Components
-								<input bind:value={metadataComponentSearch} autocomplete="off" placeholder="Full name, folder, namespace..." disabled={!metadataComponents.length} />
-							</label>
+							</div>
+						{/if}
+					{:else}
+						<div class="empty-state compact-empty">
+							<p>Select a component to inspect details.</p>
+							<button
+								class="btn btn--ghost btn--compact"
+								type="button"
+								onclick={() => onListMetadataComponents(undefined, true)}
+								disabled={isLoadingMetadataComponents}
+							>
+								Refresh List
+							</button>
 						</div>
+					{/if}
+				</aside>
+			</div>
 
-						{#if metadataComponentErrors.length}
-							<div class="metadata-errors" role="status">
-								{#each metadataComponentErrors as error}
-									<p>{error}</p>
-								{/each}
-							</div>
-						{/if}
+			<div class="explorer-list-pane">
+				<div class="explorer-toolbar">
+					<label>
+						Filter Components
+						<input
+							bind:value={metadataComponentSearch}
+							autocomplete="off"
+							placeholder="Full name, folder, namespace..."
+							disabled={!metadataComponents.length}
+						/>
+					</label>
+				</div>
 
-						{#if shouldGroupMetadataComponents}
-							<div class="component-tree" role="tree" aria-label="Metadata components">
-								{#each metadataComponentGroups as group (group.name)}
-									<section class="component-group">
-										<button class="group-toggle" type="button" onclick={() => onToggleMetadataGroup(group.name)} aria-expanded={group.isExpanded}>
-                    <span title={group.name}>{group.isExpanded ? "▾" : "▸"} {group.name}</span>
-											<strong>{group.components.length}</strong>
-										</button>
-										{#if group.isExpanded}
-											<div class="component-table" role="table" aria-label={`${group.name} components`}>
-												<div class="component-row table-heading" role="row">
-													<span>
-														<input
-															type="checkbox"
-															title="Select/Deselect all in group"
-															checked={group.components.length > 0 && group.components.every(c => onIsComponentStaged(c, c.type))}
-															indeterminate={group.components.some(c => onIsComponentStaged(c, c.type)) && !group.components.every(c => onIsComponentStaged(c, c.type))}
-															onchange={() => onToggleAllStagedItems(group.components, group.components[0]?.type)}
-														/>
-													</span>
-													<span>Component</span><span>Modified By</span><span>Modified Date</span><span>Actions</span>
-												</div>
-												{#each group.components as component (component.fullName)}
-													<div class="component-row" class:active-row={component.fullName === selectedMetadataComponentFullName} role="row">
-														<span>
-															<input type="checkbox" title="Select for destructive changeset" checked={onIsComponentStaged(component, component.type)} onchange={() => onToggleStagedItem(component, component.type)} />
-														</span>
-														<span>
-															<button class="component-link" title={component.fullName} type="button" onclick={() => onSelectMetadataComponent(component.fullName)}>
-																{getGroupedComponentDisplayName(component, group.name)}
-															</button>
-														</span>
-														<span title={component.lastModifiedByName ?? ""}>{formatMetadataDetailValue(component.lastModifiedByName)}</span>
-														<span title={component.lastModifiedDate ?? ""}>{formatMetadataDetailValue(component.lastModifiedDate)}</span>
-														<span>
-															<button class="inline-action" type="button" onclick={() => onToggleStagedItem(component, component.type)}>
-																{onIsComponentStaged(component, component.type) ? "Unstage" : "Stage"}
-															</button>
-														</span>
-													</div>
-												{/each}
-											</div>
-										{/if}
-									</section>
-								{/each}
-							</div>
-						{:else}
-							<div class="component-tree">
-								<div class="component-table" role="table" aria-label="Metadata components">
-									<div class="component-row table-heading" role="row">
-										<span>
-											<input
-												type="checkbox"
-												title="Select/Deselect all visible components"
-												checked={filteredMetadataComponents.length > 0 && filteredMetadataComponents.every(c => onIsComponentStaged(c, c.type))}
-												indeterminate={filteredMetadataComponents.some(c => onIsComponentStaged(c, c.type)) && !filteredMetadataComponents.every(c => onIsComponentStaged(c, c.type))}
-												onchange={() => onToggleAllStagedItems(filteredMetadataComponents, selectedMetadataTypeXmlName)}
-											/>
-										</span>
-										<span>Component</span><span>Modified By</span><span>Modified Date</span><span>Actions</span>
-									</div>
-									{#each filteredMetadataComponents as component (component.fullName)}
-										<div class="component-row" class:active-row={component.fullName === selectedMetadataComponentFullName} role="row">
-											<span>
-												<input type="checkbox" title="Select for destructive changeset" checked={onIsComponentStaged(component, component.type)} onchange={() => onToggleStagedItem(component, component.type)} />
-											</span>
-											<span>
-												<button class="component-link" title={component.fullName} type="button" onclick={() => onSelectMetadataComponent(component.fullName)}>
-													{component.fullName}
-												</button>
-											</span>
-											<span title={component.lastModifiedByName ?? ""}>{formatMetadataDetailValue(component.lastModifiedByName)}</span>
-											<span title={component.lastModifiedDate ?? ""}>{formatMetadataDetailValue(component.lastModifiedDate)}</span>
-											<span>
-												<button class="inline-action" type="button" onclick={() => onToggleStagedItem(component, component.type)}>
-													{onIsComponentStaged(component, component.type) ? "Unstage" : "Stage"}
-												</button>
-											</span>
-										</div>
-									{/each}
-								</div>
-							</div>
-						{/if}
-					</div>
-				{:else if metadataComponentTargetType}
-					<div class="empty-state">
-						<h3>No components returned</h3>
-						<p>The selected type returned no listable components for this org.</p>
-					</div>
-				{:else}
-					<div class="empty-state">
-						<h3>Select a type to browse components</h3>
-						<p>Click a metadata type row in the list to load its components.</p>
+				{#if metadataComponentErrors.length}
+					<div class="metadata-errors" role="status">
+						{#each metadataComponentErrors as error, i (i)}
+							<p>{error}</p>
+						{/each}
 					</div>
 				{/if}
+
+				{#if shouldGroupMetadataComponents}
+					<div class="component-tree" role="tree" aria-label="Metadata components">
+						{#each metadataComponentGroups as group (group.name)}
+							<section class="component-group">
+								<button
+									class="group-toggle"
+									type="button"
+									onclick={() => onToggleMetadataGroup(group.name)}
+									aria-expanded={group.isExpanded}
+								>
+									<span title={group.name}>{group.isExpanded ? "▾" : "▸"} {group.name}</span>
+									<strong>{group.components.length}</strong>
+								</button>
+								{#if group.isExpanded}
+									<div class="component-table" role="table" aria-label={`${group.name} components`}>
+										<div class="component-row table-heading" role="row">
+											<span>
+												<input
+													type="checkbox"
+													title="Select/Deselect all in group"
+													checked={group.components.length > 0 &&
+														group.components.every((c) => onIsComponentStaged(c, c.type))}
+													indeterminate={group.components.some((c) =>
+														onIsComponentStaged(c, c.type),
+													) && !group.components.every((c) => onIsComponentStaged(c, c.type))}
+													onchange={() =>
+														onToggleAllStagedItems(group.components, group.components[0]?.type)}
+												/>
+											</span>
+											<span>Component</span><span>Modified By</span><span>Modified Date</span><span
+												>Actions</span
+											>
+										</div>
+										{#each group.components as component (component.fullName)}
+											<div
+												class="component-row"
+												class:active-row={component.fullName === selectedMetadataComponentFullName}
+												role="row"
+											>
+												<span>
+													<input
+														type="checkbox"
+														title="Select for destructive changeset"
+														checked={onIsComponentStaged(component, component.type)}
+														onchange={() => onToggleStagedItem(component, component.type)}
+													/>
+												</span>
+												<span>
+													<button
+														class="component-link"
+														title={component.fullName}
+														type="button"
+														onclick={() => onSelectMetadataComponent(component.fullName)}
+													>
+														{getGroupedComponentDisplayName(component, group.name)}
+													</button>
+												</span>
+												<span title={component.lastModifiedByName ?? ""}
+													>{formatMetadataDetailValue(component.lastModifiedByName)}</span
+												>
+												<span title={component.lastModifiedDate ?? ""}
+													>{formatMetadataDetailValue(component.lastModifiedDate)}</span
+												>
+												<span>
+													<button
+														class="inline-action"
+														type="button"
+														onclick={() => onToggleStagedItem(component, component.type)}
+													>
+														{onIsComponentStaged(component, component.type) ? "Unstage" : "Stage"}
+													</button>
+												</span>
+											</div>
+										{/each}
+									</div>
+								{/if}
+							</section>
+						{/each}
+					</div>
+				{:else}
+					<div class="component-tree">
+						<div class="component-table" role="table" aria-label="Metadata components">
+							<div class="component-row table-heading" role="row">
+								<span>
+									<input
+										type="checkbox"
+										title="Select/Deselect all visible components"
+										checked={filteredMetadataComponents.length > 0 &&
+											filteredMetadataComponents.every((c) => onIsComponentStaged(c, c.type))}
+										indeterminate={filteredMetadataComponents.some((c) =>
+											onIsComponentStaged(c, c.type),
+										) && !filteredMetadataComponents.every((c) => onIsComponentStaged(c, c.type))}
+										onchange={() =>
+											onToggleAllStagedItems(
+												filteredMetadataComponents,
+												selectedMetadataTypeXmlName,
+											)}
+									/>
+								</span>
+								<span>Component</span><span>Modified By</span><span>Modified Date</span><span
+									>Actions</span
+								>
+							</div>
+							{#each filteredMetadataComponents as component (component.fullName)}
+								<div
+									class="component-row"
+									class:active-row={component.fullName === selectedMetadataComponentFullName}
+									role="row"
+								>
+									<span>
+										<input
+											type="checkbox"
+											title="Select for destructive changeset"
+											checked={onIsComponentStaged(component, component.type)}
+											onchange={() => onToggleStagedItem(component, component.type)}
+										/>
+									</span>
+									<span>
+										<button
+											class="component-link"
+											title={component.fullName}
+											type="button"
+											onclick={() => onSelectMetadataComponent(component.fullName)}
+										>
+											{component.fullName}
+										</button>
+									</span>
+									<span title={component.lastModifiedByName ?? ""}
+										>{formatMetadataDetailValue(component.lastModifiedByName)}</span
+									>
+									<span title={component.lastModifiedDate ?? ""}
+										>{formatMetadataDetailValue(component.lastModifiedDate)}</span
+									>
+									<span>
+										<button
+											class="inline-action"
+											type="button"
+											onclick={() => onToggleStagedItem(component, component.type)}
+										>
+											{onIsComponentStaged(component, component.type) ? "Unstage" : "Stage"}
+										</button>
+									</span>
+								</div>
+							{/each}
+						</div>
+					</div>
+				{/if}
+			</div>
+		{:else if metadataComponentTargetType}
+			<div class="empty-state">
+				<h3>No components returned</h3>
+				<p>The selected type returned no listable components for this org.</p>
+			</div>
+		{:else}
+			<div class="empty-state">
+				<h3>Select a type to browse components</h3>
+				<p>Click a metadata type row in the list to load its components.</p>
+			</div>
+		{/if}
 	</section>
 </div>
-
-
-

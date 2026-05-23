@@ -18,10 +18,16 @@ export function parseSoqlError(input: string): ParsedSoqlError {
 		const errorLine = errorIndex >= 0 ? lines[errorIndex] : "";
 		const rowColumn = errorLine.match(ROW_COLUMN_LINE);
 		const line = rowColumn ? Number.parseInt(rowColumn[1] ?? "", 10) : 1;
-		const column = rowColumn ? Number.parseInt(rowColumn[2] ?? "", 10) : Math.max(1, (lines[caretIndex] ?? "").search(/\^/) + 1);
-		const message = errorIndex >= 0
-			? lines.slice(errorIndex + 1).join(" ").trim()
-			: "";
+		const column = rowColumn
+			? Number.parseInt(rowColumn[2] ?? "", 10)
+			: Math.max(1, (lines[caretIndex] ?? "").search(/\^/) + 1);
+		const message =
+			errorIndex >= 0
+				? lines
+						.slice(errorIndex + 1)
+						.join(" ")
+						.trim()
+				: "";
 		return {
 			message: message || "SOQL validation failed.",
 			line: Number.isFinite(line) ? line : undefined,

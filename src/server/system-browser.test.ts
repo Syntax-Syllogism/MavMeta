@@ -15,7 +15,9 @@ describe("openInSystemBrowser", () => {
 		spawnMock.mockReturnValue(child);
 		queueMicrotask(() => child.emit("spawn"));
 
-		await expect(openInSystemBrowser("http://127.0.0.1:8787", spawnMock as any)).resolves.toBeUndefined();
+		await expect(
+			openInSystemBrowser("http://127.0.0.1:8787", spawnMock as any),
+		).resolves.toBeUndefined();
 		expect(child.unref).toHaveBeenCalledTimes(1);
 	});
 
@@ -24,7 +26,8 @@ describe("openInSystemBrowser", () => {
 		child.unref = vi.fn();
 		spawnMock.mockReturnValue(child);
 		queueMicrotask(() => child.emit("spawn"));
-		const url = "https://login.salesforce.com/services/oauth2/authorize?state=abc&response_type=code&client_id=PlatformCLI";
+		const url =
+			"https://login.salesforce.com/services/oauth2/authorize?state=abc&response_type=code&client_id=PlatformCLI";
 
 		await expect(openInSystemBrowser(url, spawnMock as any, "win32")).resolves.toBeUndefined();
 

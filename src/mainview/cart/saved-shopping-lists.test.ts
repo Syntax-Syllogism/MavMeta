@@ -25,9 +25,7 @@ describe("saved-shopping-lists", () => {
 
 		const lists = parseSavedMetadataShoppingListsPayload(serialized);
 		expect(lists).toHaveLength(1);
-		expect(lists[0]?.items).toEqual([
-			{ metadataType: "ApexClass", fullName: "AccountController" },
-		]);
+		expect(lists[0]?.items).toEqual([{ metadataType: "ApexClass", fullName: "AccountController" }]);
 	});
 
 	it("drops payloads with unsupported version", () => {

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { computeDirtyFiles, filterBundles, formatCompileErrors, inferLanguageFromPath } from "./lwc-view-model";
+import {
+	computeDirtyFiles,
+	filterBundles,
+	formatCompileErrors,
+	inferLanguageFromPath,
+} from "./lwc-view-model";
 import type { LwcBundleSummary, LwcFile } from "../../shared/lwc";
 
 function makeBundle(overrides: Partial<LwcBundleSummary> = {}): LwcBundleSummary {
@@ -134,10 +139,22 @@ describe("formatCompileErrors", () => {
 
 	it("normalizes a valid error", () => {
 		const result = formatCompileErrors([
-			{ filePath: "lwc/foo/foo.js", line: 10, column: 5, message: "Syntax error", severity: "error" },
+			{
+				filePath: "lwc/foo/foo.js",
+				line: 10,
+				column: 5,
+				message: "Syntax error",
+				severity: "error",
+			},
 		]);
 		expect(result).toEqual([
-			{ filePath: "lwc/foo/foo.js", line: 10, column: 5, message: "Syntax error", severity: "error" },
+			{
+				filePath: "lwc/foo/foo.js",
+				line: 10,
+				column: 5,
+				message: "Syntax error",
+				severity: "error",
+			},
 		]);
 	});
 

@@ -4,11 +4,15 @@ import { buildSoql } from "./soql-builder";
 
 describe("buildSoql", () => {
 	it("returns empty query when no object is selected", () => {
-		expect(buildSoql({ sobject: "", selectedFields: ["Id"], filters: [], filterLogic: "AND" })).toBe("");
+		expect(
+			buildSoql({ sobject: "", selectedFields: ["Id"], filters: [], filterLogic: "AND" }),
+		).toBe("");
 	});
 
 	it("builds minimal query", () => {
-		expect(buildSoql({ sobject: "Account", selectedFields: ["Id"], filters: [], filterLogic: "AND" })).toBe("SELECT Id FROM Account");
+		expect(
+			buildSoql({ sobject: "Account", selectedFields: ["Id"], filters: [], filterLogic: "AND" }),
+		).toBe("SELECT Id FROM Account");
 	});
 
 	it("builds filters and order/limit", () => {
@@ -24,7 +28,9 @@ describe("buildSoql", () => {
 				orderBy: { field: "LastName", direction: "ASC" },
 				limit: 10,
 			}),
-		).toBe("SELECT Id, Name FROM Contact WHERE LastName LIKE 'Ada%' AND IsDeleted = false ORDER BY LastName ASC LIMIT 10");
+		).toBe(
+			"SELECT Id, Name FROM Contact WHERE LastName LIKE 'Ada%' AND IsDeleted = false ORDER BY LastName ASC LIMIT 10",
+		);
 	});
 
 	it("supports OR filter logic with null operator", () => {
@@ -81,11 +87,18 @@ describe("buildSoql", () => {
 				selectedFields: ["Id"],
 				filters: [
 					{ field: "CloseDate", fieldType: "date", operator: "=", value: "2026-01-01" },
-					{ field: "CreatedDate", fieldType: "datetime", operator: ">", value: "2026-01-01T00:00:00Z" },
+					{
+						field: "CreatedDate",
+						fieldType: "datetime",
+						operator: ">",
+						value: "2026-01-01T00:00:00Z",
+					},
 				],
 				filterLogic: "AND",
 			}),
-		).toBe("SELECT Id FROM Opportunity WHERE CloseDate = 2026-01-01 AND CreatedDate > 2026-01-01T00:00:00Z");
+		).toBe(
+			"SELECT Id FROM Opportunity WHERE CloseDate = 2026-01-01 AND CreatedDate > 2026-01-01T00:00:00Z",
+		);
 	});
 
 	it("keeps numeric values unquoted for numeric field types", () => {
@@ -99,4 +112,3 @@ describe("buildSoql", () => {
 		).toBe("SELECT Id FROM Opportunity WHERE Amount > 42.5");
 	});
 });
-

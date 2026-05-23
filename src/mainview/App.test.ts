@@ -249,7 +249,9 @@ describe("App Smoke Tests", () => {
 	it("renders icon rail navigation with accessible labels", async () => {
 		render(App);
 
-		await screen.findByRole("img", { name: "MavMeta — Admin Workbench" });
+		await screen.findByRole("img", {
+			name: (name) => name.includes("MavMeta") && name.includes("Admin Workbench"),
+		});
 		expect(screen.getByRole("button", { name: "Environment Explorer" })).toBeTruthy();
 		expect(screen.getByRole("button", { name: "Metadata Explorer" })).toBeTruthy();
 		expect(screen.getByRole("button", { name: "Object Explorer" })).toBeTruthy();
@@ -257,7 +259,9 @@ describe("App Smoke Tests", () => {
 		expect(screen.getByRole("button", { name: "REST Explorer" })).toBeTruthy();
 		expect(screen.getByRole("button", { name: "SOQL Explorer" })).toBeTruthy();
 		expect(screen.getByRole("button", { name: "Toggle color theme" })).toBeTruthy();
-		expect(screen.getByRole("button", { name: "Settings (coming soon)" }).getAttribute("aria-disabled")).toBe("true");
+		expect(
+			screen.getByRole("button", { name: "Settings (coming soon)" }).getAttribute("aria-disabled"),
+		).toBe("true");
 		expect(screen.getByText("Admin Workbench")).toBeTruthy();
 	});
 

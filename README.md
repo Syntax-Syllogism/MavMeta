@@ -42,12 +42,14 @@ The frontend is Svelte 5. The backend is a local Node server (Fastify) that uses
 `src/mainview/App.svelte` is now the orchestration shell. It composes workflow-oriented components and keeps cross-workflow state orchestration in one place.
 
 Primary UI components:
+
 - `orgs/OrgDirectory.svelte`: org auth form, org directory table, and org row actions.
 - `metadata/MetadataExplorer.svelte`: metadata type discovery/filtering, component explorer, grouping, and inspector.
 - `cart/MetadataCartWizard.svelte`: staged metadata review, action stepper, destructive confirmation, and result/progress UI.
 - `StatusBar.svelte`, `AliasModal.svelte`, `ScratchDeleteModal.svelte`: stable shell/modal primitives extracted from `App.svelte`.
 
 Pure view-model helpers (unit-tested):
+
 - `metadata/metadata-view-model.ts`
 - `cart/cart-view-model.ts`
 - `deploy/deploy-view-model.ts`
@@ -111,6 +113,7 @@ npm start
 - `npx @syntax-syllogism/mavmeta` / `mavmeta` runs the packaged CLI in static mode, requests an ephemeral local port, and opens the browser automatically.
 
 Optional backend env vars:
+
 - `MAVMETA_HOST` (default: `127.0.0.1`)
 - `MAVMETA_PORT` (default: `8787`)
 - `MAVMETA_WEB_PORT` (default: `5173`)

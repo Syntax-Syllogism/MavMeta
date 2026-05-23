@@ -5,13 +5,9 @@ import { maybeOpenStaticBrowser } from "./startup-browser";
 const host = process.env.MAVMETA_HOST ?? "127.0.0.1";
 const hasExplicitPort = process.env.MAVMETA_PORT !== undefined;
 const shouldServeStatic =
-	process.argv.includes("--serve-static") ||
-	process.env.MAVMETA_SERVE_STATIC === "1";
+	process.argv.includes("--serve-static") || process.env.MAVMETA_SERVE_STATIC === "1";
 const staticRootDir = process.env.MAVMETA_STATIC_ROOT_DIR?.trim() || undefined;
-const webPort = parsePort(
-	process.env.MAVMETA_WEB_PORT ?? "5173",
-	"MAVMETA_WEB_PORT",
-);
+const webPort = parsePort(process.env.MAVMETA_WEB_PORT ?? "5173", "MAVMETA_WEB_PORT");
 const port = parsePort(
 	process.env.MAVMETA_PORT ?? (shouldServeStatic ? "0" : "8787"),
 	"MAVMETA_PORT",
@@ -25,9 +21,7 @@ const app = createApp({
 	serveStatic: shouldServeStatic,
 	staticRootDir,
 	allowDevSessionBootstrap: !shouldServeStatic,
-	hostAllowlist: shouldServeStatic
-		? []
-		: [`127.0.0.1:${webPort}`, `localhost:${webPort}`],
+	hostAllowlist: shouldServeStatic ? [] : [`127.0.0.1:${webPort}`, `localhost:${webPort}`],
 	originAllowlist: shouldServeStatic
 		? []
 		: [`http://127.0.0.1:${webPort}`, `http://localhost:${webPort}`],
@@ -74,9 +68,7 @@ function parsePort(value: string, name: string): number {
 	return port;
 }
 
-function parseAuthWriteGuardMode(
-	value: string | undefined,
-): "warn" | "block" {
+function parseAuthWriteGuardMode(value: string | undefined): "warn" | "block" {
 	if (value === undefined || value.trim() === "") {
 		// Default to warn so Salesforce SDK token refresh can persist auth safely.
 		return "warn";
@@ -85,7 +77,5 @@ function parseAuthWriteGuardMode(
 	if (normalized === "warn" || normalized === "block") {
 		return normalized;
 	}
-	throw new Error(
-		`MAVMETA_AUTH_WRITE_GUARD_MODE must be "warn" or "block". Received "${value}".`,
-	);
+	throw new Error(`MAVMETA_AUTH_WRITE_GUARD_MODE must be "warn" or "block". Received "${value}".`);
 }

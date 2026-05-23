@@ -98,10 +98,7 @@ async function requestJson<TResponse>(
 	return (await response.json()) as TResponse;
 }
 
-async function requestText(
-	method: HttpMethod,
-	path: string,
-): Promise<string> {
+async function requestText(method: HttpMethod, path: string): Promise<string> {
 	const token = await readSessionTokenOrFetch();
 	const response = await fetch(path, {
 		method,
@@ -178,8 +175,7 @@ export const backendClient = {
 		requestJson<OrgActionResponse>("POST", "/api/orgs/auth", request),
 	reauthOrg: (target: OrgTarget) =>
 		requestJson<OrgActionResponse>("POST", "/api/orgs/reauth", target),
-	openOrg: (target: OrgTarget) =>
-		requestJson<OrgActionResponse>("POST", "/api/orgs/open", target),
+	openOrg: (target: OrgTarget) => requestJson<OrgActionResponse>("POST", "/api/orgs/open", target),
 	logoutOrg: (target: OrgTarget) =>
 		requestJson<OrgActionResponse>("POST", "/api/orgs/logout", target),
 	setAlias: (request: SetAliasRequest) =>
@@ -223,13 +219,19 @@ export const backendClient = {
 	soqlBulkStatus: (request: BulkQueryStatusRequest) =>
 		requestJson<BulkQueryStatusResponse>("POST", "/api/soql/bulk/status", request),
 	soqlBulkResult: (username: string, jobId: string) =>
-		requestText("GET", `/api/soql/bulk/result?username=${encodeURIComponent(username)}&jobId=${encodeURIComponent(jobId)}`),
+		requestText(
+			"GET",
+			`/api/soql/bulk/result?username=${encodeURIComponent(username)}&jobId=${encodeURIComponent(jobId)}`,
+		),
 	startScratchOrgCreate: (request: StartScratchOrgCreateRequest) =>
 		requestJson<StartScratchOrgCreateResponse>("POST", "/api/orgs/create-scratch/start", request),
 	getScratchOrgCreateStatus: (request: ScratchOrgCreateStatusRequest) =>
 		requestJson<ScratchOrgCreateStatusResponse>("POST", "/api/orgs/create-scratch/status", request),
 	listScratchOrgSnapshots: (devHubUsername: string) =>
-		requestJson<ListSnapshotsResponse>("GET", `/api/orgs/snapshots?devHub=${encodeURIComponent(devHubUsername)}`),
+		requestJson<ListSnapshotsResponse>(
+			"GET",
+			`/api/orgs/snapshots?devHub=${encodeURIComponent(devHubUsername)}`,
+		),
 	listObjects: (request: ListObjectsRequest) =>
 		requestJson<ListObjectsResponse>("POST", "/api/objects/list", request),
 	listObjectChildren: (request: ListObjectChildrenRequest) =>

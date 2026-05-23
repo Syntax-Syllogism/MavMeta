@@ -3,10 +3,7 @@ import fsPromises from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-const PROTECTED_ROOTS = [
-	path.resolve(os.homedir(), ".sf"),
-	path.resolve(os.homedir(), ".sfdx"),
-];
+const PROTECTED_ROOTS = [path.resolve(os.homedir(), ".sf"), path.resolve(os.homedir(), ".sfdx")];
 
 const WRITE_FLAG_PATTERN = /[wa+]/;
 const MAX_WARNED_PATHS = 256;
@@ -19,9 +16,7 @@ type AuthFileWriteGuardOptions = {
 
 const warnedPaths = new Set<string>();
 
-export function installAuthFileWriteGuard(
-	options: AuthFileWriteGuardOptions = {},
-): void {
+export function installAuthFileWriteGuard(options: AuthFileWriteGuardOptions = {}): void {
 	const mode = options.mode ?? "block";
 	const originalOpen = fs.open as (...args: unknown[]) => unknown;
 	(fs as unknown as { open: (...args: unknown[]) => unknown }).open = (
@@ -68,26 +63,20 @@ export function installAuthFileWriteGuard(
 	const originalPromisesWriteFile = fsPromises.writeFile.bind(fsPromises) as (
 		...args: unknown[]
 	) => Promise<unknown>;
-	(fsPromises as unknown as { writeFile: (...args: unknown[]) => Promise<unknown> }).writeFile = async (
-		filePath: unknown,
-		data: unknown,
-		options?: unknown,
-	) => {
-		assertWriteAllowed(filePath, "w", mode);
-		return originalPromisesWriteFile(filePath, data, options);
-	};
+	(fsPromises as unknown as { writeFile: (...args: unknown[]) => Promise<unknown> }).writeFile =
+		async (filePath: unknown, data: unknown, options?: unknown) => {
+			assertWriteAllowed(filePath, "w", mode);
+			return originalPromisesWriteFile(filePath, data, options);
+		};
 
 	const originalPromisesAppendFile = fsPromises.appendFile.bind(fsPromises) as (
 		...args: unknown[]
 	) => Promise<unknown>;
-	(fsPromises as unknown as { appendFile: (...args: unknown[]) => Promise<unknown> }).appendFile = async (
-		filePath: unknown,
-		data: unknown,
-		options?: unknown,
-	) => {
-		assertWriteAllowed(filePath, "a", mode);
-		return originalPromisesAppendFile(filePath, data, options);
-	};
+	(fsPromises as unknown as { appendFile: (...args: unknown[]) => Promise<unknown> }).appendFile =
+		async (filePath: unknown, data: unknown, options?: unknown) => {
+			assertWriteAllowed(filePath, "a", mode);
+			return originalPromisesAppendFile(filePath, data, options);
+		};
 }
 
 export function assertWriteAllowed(

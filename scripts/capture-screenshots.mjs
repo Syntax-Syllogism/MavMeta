@@ -14,7 +14,8 @@ async function ensureDir() {
 }
 
 async function capture(page, filename, theme = "dark") {
-	const savePath = theme === "light" ? path.join(LIGHT_DIR, filename) : path.join(OUTPUT_DIR, filename);
+	const savePath =
+		theme === "light" ? path.join(LIGHT_DIR, filename) : path.join(OUTPUT_DIR, filename);
 	await page.screenshot({
 		path: savePath,
 		fullPage: true,
@@ -44,7 +45,10 @@ async function prepareMetadataScreenshot(page) {
 	await page.waitForSelector('.component-table[aria-label="Metadata components"] .component-link', {
 		timeout: WAIT_TIMEOUT_MS,
 	});
-	await page.locator('.component-table[aria-label="Metadata components"] .component-link').first().click();
+	await page
+		.locator('.component-table[aria-label="Metadata components"] .component-link')
+		.first()
+		.click();
 	await page.waitForTimeout(700);
 }
 
@@ -68,12 +72,32 @@ async function prepareLwcScreenshot(page) {
 	await page.waitForSelector('ul.bundle-list-items[aria-label="LWC bundles"] li.bundle-item', {
 		timeout: WAIT_TIMEOUT_MS,
 	});
-	await page.locator('ul.bundle-list-items[aria-label="LWC bundles"] li.bundle-item').first().click();
+	await page
+		.locator('ul.bundle-list-items[aria-label="LWC bundles"] li.bundle-item')
+		.first()
+		.click();
 
 	await page.waitForSelector('.file-tabs[aria-label="Bundle files"] .file-tab', {
 		timeout: WAIT_TIMEOUT_MS,
 	});
 	await page.waitForTimeout(700);
+}
+
+async function prepareSoqlScreenshot(page) {
+	const sobjectInput = page.getByLabel("SObject");
+	await sobjectInput.waitFor({ timeout: WAIT_TIMEOUT_MS });
+
+	await sobjectInput.fill("Account");
+	await sobjectInput.press("Enter");
+
+	// Wait for fields to load after object selection
+	await page.waitForSelector(".soql-field", { timeout: WAIT_TIMEOUT_MS });
+	await page.waitForFunction(() => document.querySelectorAll(".soql-field").length > 1);
+
+	// Id is selected by default; add Name
+	const nameField = page.locator(".soql-field", { hasText: /^Name/ }).first();
+	await nameField.click();
+	await page.waitForTimeout(500);
 }
 
 async function trySelectCheckr(page) {
@@ -124,9 +148,12 @@ async function openWizardAndCapture(page, theme) {
 	await page.waitForSelector(".cart-drawer", { timeout: WAIT_TIMEOUT_MS });
 	await capture(page, "wizard-01-list.png", theme);
 
-	await page.getByRole("button", { name: "Next" }).click().catch(async () => {
-		await page.getByRole("button", { name: "Next Step" }).first().click();
-	});
+	await page
+		.getByRole("button", { name: "Next" })
+		.click()
+		.catch(async () => {
+			await page.getByRole("button", { name: "Next Step" }).first().click();
+		});
 	await page.waitForTimeout(600);
 	await capture(page, "wizard-02-actions.png", theme);
 
@@ -151,9 +178,12 @@ async function openWizardAndCapture(page, theme) {
 		}
 	}
 
-	await page.getByRole("button", { name: "Next" }).click().catch(async () => {
-		await page.getByRole("button", { name: "Next Step" }).first().click();
-	});
+	await page
+		.getByRole("button", { name: "Next" })
+		.click()
+		.catch(async () => {
+			await page.getByRole("button", { name: "Next Step" }).first().click();
+		});
 	await page.waitForTimeout(700);
 	await capture(page, "wizard-03-confirm.png", theme);
 }
@@ -164,7 +194,8 @@ async function runCaptureSuite(page, theme) {
 		timeout: WAIT_TIMEOUT_MS,
 	});
 	await trySelectCheckr(page);
-	await capture(page, "nav-01-orgs.png", theme);
+	await clickNav(page, "Environment Explorer");
+	await capture(page, "nav-01-environment.png", theme);
 
 	await clickNav(page, "Metadata Explorer");
 	await prepareMetadataScreenshot(page);
@@ -180,6 +211,10 @@ async function runCaptureSuite(page, theme) {
 	await clickNav(page, "LWC Editor");
 	await prepareLwcScreenshot(page);
 	await capture(page, "nav-05-lwc.png", theme);
+
+	await clickNav(page, "SOQL Explorer");
+	await prepareSoqlScreenshot(page);
+	await capture(page, "nav-06-soql.png", theme);
 
 	await clickNav(page, "Metadata Explorer");
 	const seeded = await seedStagedItems(page);

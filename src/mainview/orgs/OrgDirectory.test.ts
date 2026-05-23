@@ -112,6 +112,8 @@ describe("OrgDirectory", () => {
 
 		expect(await screen.findByText("Trial Expiration")).toBeTruthy();
 		expect(screen.getAllByText("n/a").length).toBeGreaterThan(0);
-		expect(screen.getByText(new Date("2026-06-01T00:00:00.000Z").toLocaleDateString())).toBeTruthy();
+		expect(
+			screen.getByText(new Date("2026-06-01T00:00:00.000Z").toLocaleDateString()),
+		).toBeTruthy();
 	});
 });

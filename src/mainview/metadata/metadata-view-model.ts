@@ -6,22 +6,14 @@ export type MetadataComponentGroup = {
 	isExpanded: boolean;
 };
 
-export function matchesMetadataTypeFilter(
-	metadataType: MetadataTypeSummary,
-	filter: string,
-) {
+export function matchesMetadataTypeFilter(metadataType: MetadataTypeSummary, filter: string) {
 	const normalizedFilter = filter.trim().toLowerCase();
 
 	if (!normalizedFilter) {
 		return true;
 	}
 
-	return [
-		metadataType.label,
-		metadataType.xmlName,
-		metadataType.directoryName,
-		metadataType.suffix,
-	]
+	return [metadataType.label, metadataType.xmlName, metadataType.directoryName, metadataType.suffix]
 		.filter((value): value is string => value !== undefined)
 		.some((value) => value.toLowerCase().includes(normalizedFilter));
 }
@@ -72,12 +64,7 @@ export function buildMetadataComponentGroups(
 }
 
 export function getMetadataComponentGroupName(component: MetadataComponentSummary) {
-	return (
-		component.parentName ??
-		component.folder ??
-		component.namespacePrefix ??
-		"Ungrouped"
-	);
+	return component.parentName ?? component.folder ?? component.namespacePrefix ?? "Ungrouped";
 }
 
 export function formatMetadataDetailValue(value: string | undefined) {

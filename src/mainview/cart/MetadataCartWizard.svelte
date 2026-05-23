@@ -5,7 +5,10 @@
 	import type { OrgSummary } from "../../shared/org";
 	import type { CartAction, CartStep, StagedItem, StagedItemGroup } from "./cart-view-model";
 	import type { DeployMode } from "./types";
-	import type { SavedMetadataShoppingList, SavedMetadataShoppingListItem } from "./saved-shopping-lists";
+	import type {
+		SavedMetadataShoppingList,
+		SavedMetadataShoppingListItem,
+	} from "./saved-shopping-lists";
 	import { formatItemCount, hasCompareXml } from "./cart-view-model";
 	import DiffViewerModal from "./DiffViewerModal.svelte";
 	import {
@@ -65,14 +68,14 @@
 		onSetCartStep,
 		onContinueFromActions,
 		onRunDelete,
-			onRunCompare,
-			onDeployValidatedResult,
-			onDeployValidatedCrossOrgResult,
-			onOpenDeploymentStatusTargetOrg,
-			onOpenSpecificDeploymentStatus,
-			onCancelRunningDeploy,
-			quirkyDeployMessage,
-		}: {
+		onRunCompare,
+		onDeployValidatedResult,
+		onDeployValidatedCrossOrgResult,
+		onOpenDeploymentStatusTargetOrg,
+		onOpenSpecificDeploymentStatus,
+		onCancelRunningDeploy,
+		quirkyDeployMessage,
+	}: {
 		isOpen: boolean;
 		cartTitle: string;
 		cartSubtitle: string;
@@ -123,14 +126,14 @@
 		onSetCartStep: (step: CartStep) => void;
 		onContinueFromActions: () => void;
 		onRunDelete: () => void;
-			onRunCompare: () => void;
-			onDeployValidatedResult: () => void;
-			onDeployValidatedCrossOrgResult: () => void;
-			onOpenDeploymentStatusTargetOrg: () => void | Promise<void>;
-			onOpenSpecificDeploymentStatus: () => void | Promise<void>;
-			onCancelRunningDeploy: () => void | Promise<void>;
-			quirkyDeployMessage: string;
-		} = $props();
+		onRunCompare: () => void;
+		onDeployValidatedResult: () => void;
+		onDeployValidatedCrossOrgResult: () => void;
+		onOpenDeploymentStatusTargetOrg: () => void | Promise<void>;
+		onOpenSpecificDeploymentStatus: () => void | Promise<void>;
+		onCancelRunningDeploy: () => void | Promise<void>;
+		quirkyDeployMessage: string;
+	} = $props();
 
 	let openDiffResult: CrossOrgDiffResult | null = $state(null);
 	let openSavedListMenuRowId = $state<string | null>(null);
@@ -216,14 +219,13 @@
 			.sort((left, right) => left.state.localeCompare(right.state));
 	});
 	const rawDeployDiagnostics = $derived(
-		lastDeployResult?.rawResult
-			? JSON.stringify(lastDeployResult.rawResult, null, 2)
-			: undefined,
+		lastDeployResult?.rawResult ? JSON.stringify(lastDeployResult.rawResult, null, 2) : undefined,
 	);
 	const canOpenSpecificDeployment = $derived.by(() => {
-		const candidate = lastDeployResult?.rawResult && typeof lastDeployResult.rawResult === "object"
-			? (lastDeployResult.rawResult as Record<string, unknown>).id
-			: undefined;
+		const candidate =
+			lastDeployResult?.rawResult && typeof lastDeployResult.rawResult === "object"
+				? (lastDeployResult.rawResult as Record<string, unknown>).id
+				: undefined;
 		return typeof candidate === "string" && /^0Af[a-zA-Z0-9]{12,15}$/.test(candidate.trim());
 	});
 	function formatSavedListTimestamp(value: string) {
@@ -267,7 +269,12 @@
 						<p>{cartSubtitle}</p>
 					</div>
 				</div>
-				<button class="btn btn--ghost btn--icon  close-drawer-button" type="button" onclick={onClose} aria-label="Close">
+				<button
+					class="btn btn--ghost btn--icon close-drawer-button"
+					type="button"
+					onclick={onClose}
+					aria-label="Close"
+				>
 					<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
 						<path d="m6 6 12 12M18 6 6 18" />
 					</svg>
@@ -297,8 +304,18 @@
 				{#if cartStep === "list"}
 					<section class="save-list-feature" aria-label="Save staged metadata list">
 						<div class="save-input-group">
-							<input bind:value={saveListName} autocomplete="off" placeholder="my saved list" aria-label="Saved list name" />
-							<button class="btn btn--primary save-list-button" type="button" onclick={onSaveList} disabled={!saveListName.trim() || isListSaved}>
+							<input
+								bind:value={saveListName}
+								autocomplete="off"
+								placeholder="my saved list"
+								aria-label="Saved list name"
+							/>
+							<button
+								class="btn btn--primary save-list-button"
+								type="button"
+								onclick={onSaveList}
+								disabled={!saveListName.trim() || isListSaved}
+							>
 								<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
 									<path d="M5 4h12l2 2v14H5z" />
 									<path d="M8 4v6h8V4M8 17h8" />
@@ -340,16 +357,42 @@
 													Actions
 												</summary>
 												<div class="action-menu-items">
-													<button type="button" disabled={isLoadingSavedList} onclick={() => { openSavedListMenuRowId = null; onLoadSavedList(list.id); }}>
+													<button
+														type="button"
+														disabled={isLoadingSavedList}
+														onclick={() => {
+															openSavedListMenuRowId = null;
+															onLoadSavedList(list.id);
+														}}
+													>
 														Load into cart
 													</button>
-													<button type="button" onclick={() => { openSavedListMenuRowId = null; onRenameSavedList(list.id); }}>
+													<button
+														type="button"
+														onclick={() => {
+															openSavedListMenuRowId = null;
+															onRenameSavedList(list.id);
+														}}
+													>
 														Rename
 													</button>
-													<button type="button" onclick={() => { openSavedListMenuRowId = null; onExportSavedList(list.id); }}>
+													<button
+														type="button"
+														onclick={() => {
+															openSavedListMenuRowId = null;
+															onExportSavedList(list.id);
+														}}
+													>
 														Export package.xml
 													</button>
-													<button class="danger-action" type="button" onclick={() => { openSavedListMenuRowId = null; onDeleteSavedList(list.id); }}>
+													<button
+														class="danger-action"
+														type="button"
+														onclick={() => {
+															openSavedListMenuRowId = null;
+															onDeleteSavedList(list.id);
+														}}
+													>
 														Delete
 													</button>
 												</div>
@@ -394,7 +437,12 @@
 										}}
 									/>
 								</label>
-								<button class="text-btn--danger" type="button" onclick={onClearCart} disabled={!activeOrgStagedItems.length}>
+								<button
+									class="text-btn--danger"
+									type="button"
+									onclick={onClearCart}
+									disabled={!activeOrgStagedItems.length}
+								>
 									Clear All
 								</button>
 							</div>
@@ -411,8 +459,15 @@
 										<div class="staged-group-items">
 											{#each group.items as item (item.id)}
 												<div class="staged-item-row">
-													<span class="component-name-cell" title={item.fullName}>{item.fullName}</span>
-													<button class="btn btn--ghost btn--icon  remove-action" type="button" onclick={() => onRemoveStagedItem(item.id)} aria-label="Remove">
+													<span class="component-name-cell" title={item.fullName}
+														>{item.fullName}</span
+													>
+													<button
+														class="btn btn--ghost btn--icon remove-action"
+														type="button"
+														onclick={() => onRemoveStagedItem(item.id)}
+														aria-label="Remove"
+													>
 														<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
 															<path d="M6 7h12M10 11v6M14 11v6M9 7V4h6v3M8 7l1 13h6l1-13" />
 														</svg>
@@ -450,7 +505,10 @@
 							</span>
 							<span class="action-card-content">
 								<strong>Delete from org</strong>
-								<span>Perform a destructive deployment to permanently remove these components from the active org.</span>
+								<span
+									>Perform a destructive deployment to permanently remove these components from the
+									active org.</span
+								>
 							</span>
 						</button>
 
@@ -469,7 +527,9 @@
 							</span>
 							<span class="action-card-content">
 								<strong>Deploy to org</strong>
-								<span>Deploy these components to a target Salesforce environment. Change set style.</span>
+								<span
+									>Deploy these components to a target Salesforce environment. Change set style.</span
+								>
 							</span>
 						</button>
 
@@ -488,7 +548,9 @@
 							</span>
 							<span class="action-card-content">
 								<strong>Compare with org</strong>
-								<span>Perform a cross-org diff to see versioning differences for these components.</span>
+								<span
+									>Perform a cross-org diff to see versioning differences for these components.</span
+								>
 							</span>
 						</button>
 					</div>
@@ -549,10 +611,20 @@
 					<section class="confirm-action-selection">
 						<p class="eyebrow">Action Mode</p>
 						<div class="segmented">
-							<button class="toggle-button" class:active={runMode === "validate"} type="button" onclick={() => runMode = "validate"}>
+							<button
+								class="toggle-button"
+								class:active={runMode === "validate"}
+								type="button"
+								onclick={() => (runMode = "validate")}
+							>
 								Validate Only
 							</button>
-							<button class="toggle-button" class:active={runMode === "deploy"} type="button" onclick={() => runMode = "deploy"}>
+							<button
+								class="toggle-button"
+								class:active={runMode === "deploy"}
+								type="button"
+								onclick={() => (runMode = "deploy")}
+							>
 								Deploy
 							</button>
 						</div>
@@ -578,17 +650,23 @@
 							</div>
 							<label class="confirmation-label">
 								{#if isProductionLikeTarget}
-									<span class="danger-text">Production-like target. Type the phrase below to authorize deploy.</span>
+									<span class="danger-text"
+										>Production-like target. Type the phrase below to authorize deploy.</span
+									>
 								{:else}
 									Type the confirmation phrase to authorize deploy.
 								{/if}
-								<input bind:value={deployTypedConfirmation} autocomplete="off" placeholder={deployConfirmationPhrase} />
+								<input
+									bind:value={deployTypedConfirmation}
+									autocomplete="off"
+									placeholder={deployConfirmationPhrase}
+								/>
 							</label>
 							<p class="muted">Phrase: <code>{deployConfirmationPhrase}</code></p>
 							<details class="skipped-details">
 								<summary>Preview deploy components ({preflightDeployableCount})</summary>
 								<div class="skipped-list">
-									{#each activeOrgStagedItems as item}
+									{#each activeOrgStagedItems as item (`${item.metadataType}:${item.fullName}`)}
 										<p><code>{item.metadataType}:{item.fullName}</code></p>
 									{/each}
 								</div>
@@ -600,7 +678,7 @@
 						<details class="skipped-details">
 							<summary>View {preflightSkippedComponents.length} skipped components</summary>
 							<div class="skipped-list">
-								{#each preflightSkippedComponents as skipped}
+								{#each preflightSkippedComponents as skipped (`${skipped.metadataType}:${skipped.fullName}`)}
 									<p><code>{skipped.metadataType}:{skipped.fullName}</code> - {skipped.reason}</p>
 								{/each}
 							</div>
@@ -615,7 +693,10 @@
 							</svg>
 							<strong>Final destructive summary</strong>
 						</div>
-						<p>Destructive changes are permanent. Ensure you have backed up your metadata before proceeding.</p>
+						<p>
+							Destructive changes are permanent. Ensure you have backed up your metadata before
+							proceeding.
+						</p>
 						<div class="summary-fields">
 							<div>
 								<span>Target Org</span>
@@ -631,10 +712,20 @@
 					<section class="confirm-action-selection">
 						<p class="eyebrow">Action Mode</p>
 						<div class="segmented">
-							<button class="toggle-button" class:active={runMode === "validate"} type="button" onclick={() => runMode = "validate"}>
+							<button
+								class="toggle-button"
+								class:active={runMode === "validate"}
+								type="button"
+								onclick={() => (runMode = "validate")}
+							>
 								Validate Only
 							</button>
-							<button class="toggle-button" class:active={runMode === "deploy"} type="button" onclick={() => runMode = "deploy"}>
+							<button
+								class="toggle-button"
+								class:active={runMode === "deploy"}
+								type="button"
+								onclick={() => (runMode = "deploy")}
+							>
 								Destructive Delete
 							</button>
 						</div>
@@ -651,17 +742,23 @@
 							</div>
 							<label class="confirmation-label">
 								{#if isProductionLikeTarget}
-									<span class="danger-text">Production target. Type the phrase below to authorize deletion.</span>
+									<span class="danger-text"
+										>Production target. Type the phrase below to authorize deletion.</span
+									>
 								{:else}
 									Type the confirmation phrase to authorize deletion.
 								{/if}
-								<input bind:value={deployTypedConfirmation} autocomplete="off" placeholder={deployConfirmationPhrase} />
+								<input
+									bind:value={deployTypedConfirmation}
+									autocomplete="off"
+									placeholder={deployConfirmationPhrase}
+								/>
 							</label>
 							<p class="muted">Phrase: <code>{deployConfirmationPhrase}</code></p>
 							<details class="skipped-details">
 								<summary>Preview deploy components ({preflightDeployableCount})</summary>
 								<div class="skipped-list">
-									{#each activeOrgStagedItems as item}
+									{#each activeOrgStagedItems as item (`${item.metadataType}:${item.fullName}`)}
 										<p><code>{item.metadataType}:{item.fullName}</code></p>
 									{/each}
 								</div>
@@ -673,7 +770,7 @@
 						<details class="skipped-details">
 							<summary>View {preflightSkippedComponents.length} skipped components</summary>
 							<div class="skipped-list">
-								{#each preflightSkippedComponents as skipped}
+								{#each preflightSkippedComponents as skipped (`${skipped.metadataType}:${skipped.fullName}`)}
 									<p><code>{skipped.metadataType}:{skipped.fullName}</code> - {skipped.reason}</p>
 								{/each}
 							</div>
@@ -682,9 +779,9 @@
 				{:else}
 					<div class="result-container">
 						{#if cartAction === "compare"}
-								{#if isRunningCompare}
-									<div class="deployment-status-active">
-										<Fish class="rogue-fish-icon" aria-hidden="true" />
+							{#if isRunningCompare}
+								<div class="deployment-status-active">
+									<Fish class="rogue-fish-icon" aria-hidden="true" />
 									<h3>Comparing metadata...</h3>
 									<p class="muted quirky-message">{quirkyDeployMessage}</p>
 								</div>
@@ -729,7 +826,7 @@
 														<button
 															class="text-link-button view-diff-button"
 															type="button"
-															onclick={() => openDiffResult = result}
+															onclick={() => (openDiffResult = result)}
 														>
 															View diff
 														</button>
@@ -748,124 +845,155 @@
 							{#if isRunningDeploy}
 								<div class="deployment-status-active">
 									<Fish class="rogue-fish-icon" aria-hidden="true" />
-								<h3>{progressVerb} components...</h3>
-								<p class="muted quirky-message">{quirkyDeployMessage}</p>
-								<p class="muted">
-									Operation in progress on {isCrossOrgDeployAction ? compareTargetLabel : activeOrgLabel}
-								</p>
+									<h3>{progressVerb} components...</h3>
+									<p class="muted quirky-message">{quirkyDeployMessage}</p>
+									<p class="muted">
+										Operation in progress on {isCrossOrgDeployAction
+											? compareTargetLabel
+											: activeOrgLabel}
+									</p>
 
-								<section class="deploy-progress-visual" aria-label="Deploy progress">
-									<div class="deploy-progress-track">
-										<div class="deploy-progress-fill" style={`width: ${deployProgressPercent}%`}></div>
-									</div>
-									<div class="progress-details">
-										<span>{deployProgressPercent}%</span>
-										<span>{deployProgressMessage}</span>
-									</div>
-								</section>
+									<section class="deploy-progress-visual" aria-label="Deploy progress">
+										<div class="deploy-progress-track">
+											<div
+												class="deploy-progress-fill"
+												style={`width: ${deployProgressPercent}%`}
+											></div>
+										</div>
+										<div class="progress-details">
+											<span>{deployProgressPercent}%</span>
+											<span>{deployProgressMessage}</span>
+										</div>
+									</section>
 
-									<button class="btn btn--ghost cancel-deploy-button" type="button" onclick={onCancelRunningDeploy}>
+									<button
+										class="btn btn--ghost cancel-deploy-button"
+										type="button"
+										onclick={onCancelRunningDeploy}
+									>
 										Cancel Operation (Esc)
 									</button>
-									<button class="btn btn--ghost open-target-button" type="button" onclick={onOpenDeploymentStatusTargetOrg}>
+									<button
+										class="btn btn--ghost open-target-button"
+										type="button"
+										onclick={onOpenDeploymentStatusTargetOrg}
+									>
 										Open Deployment Status
 									</button>
 									{#if canOpenSpecificDeployment}
-										<button class="btn btn--ghost open-target-button" type="button" onclick={onOpenSpecificDeploymentStatus}>
+										<button
+											class="btn btn--ghost open-target-button"
+											type="button"
+											onclick={onOpenSpecificDeploymentStatus}
+										>
 											Open This Deployment
 										</button>
 									{/if}
 								</div>
 							{/if}
 
-						{#if lastDeployResult && !isRunningDeploy}
-							<div class="deployment-result-summary" class:success={lastDeployResult.state === "Succeeded"} class:failed={lastDeployResult.state === "Failed"}>
-								<div class="result-icon-large" aria-hidden="true">
-									{#if lastDeployResult.state === "Succeeded"}
-										<svg viewBox="0 0 24 24" focusable="false">
-											<path d="m6 12 4 4 8-8" />
-										</svg>
-									{:else}
-										<svg viewBox="0 0 24 24" focusable="false">
-											<path d="m7 7 10 10M17 7 7 17" />
-										</svg>
-									{/if}
-								</div>
-								<h3>{lastDeployResult.state === "Succeeded" ? "Success" : "Failed"}</h3>
-								<p class="result-message">{lastDeployResult.message}</p>
-
-								<div class="result-detail-card">
-									{#if cartAction === "deploy" && "source" in lastDeployResult}
-										<div>
-											<span>Source Org</span>
-											<strong>{sourceOrgLabel}</strong>
-										</div>
-									{/if}
-									<div>
-										<span>Deployment ID</span>
-										<strong>{getDeployResultId(lastDeployResult)}</strong>
-									</div>
-									<div>
-										<span>Target Org</span>
-										<strong>{cartAction === "deploy" ? compareTargetLabel : activeOrgLabel}</strong>
-									</div>
-									<div>
-										<span>Action</span>
-										<strong>{resultActionLabel}</strong>
-									</div>
-									<div>
-										<span>Success</span>
-										<strong>{getDeploySuccessCount(lastDeployResult)}</strong>
-									</div>
-									<div>
-										<span>Failed</span>
-										<strong>{lastDeployResult.failed.length}</strong>
-									</div>
-									<div>
-										<span>Skipped</span>
-										<strong>{lastDeployResult.skipped.length}</strong>
-									</div>
-								</div>
-
-								{#if lastDeployResult.failed.length}
-									<div class="failure-details">
-										<p class="eyebrow danger-text">Failure Details</p>
-										<div class="failure-list">
-											{#each lastDeployResult.failed as failure}
-												<div class="failure-item">
-													<strong>{failure.metadataType}:{failure.fullName}</strong>
-													<p>{getFailureMessage(failure)}</p>
-												</div>
-											{/each}
-										</div>
-									</div>
-								{/if}
-
-								{#if rawDeployDiagnostics}
-									<details class="skipped-details">
-										<summary>View raw diagnostics</summary>
-										<div class="skipped-list">
-											<pre>{rawDeployDiagnostics}</pre>
-										</div>
-									</details>
-								{/if}
-
-										<button class="btn btn--ghost open-target-button" type="button" onclick={onOpenDeploymentStatusTargetOrg}>
-											Open Deployment Status
-										</button>
-										{#if canOpenSpecificDeployment}
-											<button class="btn btn--ghost open-target-button" type="button" onclick={onOpenSpecificDeploymentStatus}>
-												Open This Deployment
-											</button>
+							{#if lastDeployResult && !isRunningDeploy}
+								<div
+									class="deployment-result-summary"
+									class:success={lastDeployResult.state === "Succeeded"}
+									class:failed={lastDeployResult.state === "Failed"}
+								>
+									<div class="result-icon-large" aria-hidden="true">
+										{#if lastDeployResult.state === "Succeeded"}
+											<svg viewBox="0 0 24 24" focusable="false">
+												<path d="m6 12 4 4 8-8" />
+											</svg>
+										{:else}
+											<svg viewBox="0 0 24 24" focusable="false">
+												<path d="m7 7 10 10M17 7 7 17" />
+											</svg>
 										{/if}
+									</div>
+									<h3>{lastDeployResult.state === "Succeeded" ? "Success" : "Failed"}</h3>
+									<p class="result-message">{lastDeployResult.message}</p>
+
+									<div class="result-detail-card">
+										{#if cartAction === "deploy" && "source" in lastDeployResult}
+											<div>
+												<span>Source Org</span>
+												<strong>{sourceOrgLabel}</strong>
+											</div>
+										{/if}
+										<div>
+											<span>Deployment ID</span>
+											<strong>{getDeployResultId(lastDeployResult)}</strong>
+										</div>
+										<div>
+											<span>Target Org</span>
+											<strong
+												>{cartAction === "deploy" ? compareTargetLabel : activeOrgLabel}</strong
+											>
+										</div>
+										<div>
+											<span>Action</span>
+											<strong>{resultActionLabel}</strong>
+										</div>
+										<div>
+											<span>Success</span>
+											<strong>{getDeploySuccessCount(lastDeployResult)}</strong>
+										</div>
+										<div>
+											<span>Failed</span>
+											<strong>{lastDeployResult.failed.length}</strong>
+										</div>
+										<div>
+											<span>Skipped</span>
+											<strong>{lastDeployResult.skipped.length}</strong>
+										</div>
+									</div>
+
+									{#if lastDeployResult.failed.length}
+										<div class="failure-details">
+											<p class="eyebrow danger-text">Failure Details</p>
+											<div class="failure-list">
+												{#each lastDeployResult.failed as failure (`${failure.metadataType}:${failure.fullName}`)}
+													<div class="failure-item">
+														<strong>{failure.metadataType}:{failure.fullName}</strong>
+														<p>{getFailureMessage(failure)}</p>
+													</div>
+												{/each}
+											</div>
+										</div>
+									{/if}
+
+									{#if rawDeployDiagnostics}
+										<details class="skipped-details">
+											<summary>View raw diagnostics</summary>
+											<div class="skipped-list">
+												<pre>{rawDeployDiagnostics}</pre>
+											</div>
+										</details>
+									{/if}
+
+									<button
+										class="btn btn--ghost open-target-button"
+										type="button"
+										onclick={onOpenDeploymentStatusTargetOrg}
+									>
+										Open Deployment Status
+									</button>
+									{#if canOpenSpecificDeployment}
+										<button
+											class="btn btn--ghost open-target-button"
+											type="button"
+											onclick={onOpenSpecificDeploymentStatus}
+										>
+											Open This Deployment
+										</button>
+									{/if}
 								</div>
 							{/if}
 
-						{#if !isRunningDeploy && !lastDeployResult}
-							<div class="empty-state compact-empty">
-								<p>No operation results yet.</p>
-							</div>
-						{/if}
+							{#if !isRunningDeploy && !lastDeployResult}
+								<div class="empty-state compact-empty">
+									<p>No operation results yet.</p>
+								</div>
+							{/if}
 						{/if}
 					</div>
 				{/if}
@@ -873,15 +1001,44 @@
 
 			<footer class="cart-drawer-footer">
 				{#if cartStep === "list"}
-					<button class="btn btn--ghost drawer-secondary-action" type="button" onclick={onClose}>Cancel</button>
-					<button class="btn btn--primary drawer-primary-action" type="button" aria-label="Next" onclick={() => onSetCartStep("actions")} disabled={!activeOrgStagedItems.length}>Next Step</button>
+					<button class="btn btn--ghost drawer-secondary-action" type="button" onclick={onClose}
+						>Cancel</button
+					>
+					<button
+						class="btn btn--primary drawer-primary-action"
+						type="button"
+						aria-label="Next"
+						onclick={() => onSetCartStep("actions")}
+						disabled={!activeOrgStagedItems.length}>Next Step</button
+					>
 				{:else if cartStep === "actions"}
-					<button class="btn btn--ghost drawer-secondary-action" type="button" aria-label="Back" onclick={() => onSetCartStep("list")}>Previous Step</button>
-					<button class="btn btn--primary drawer-primary-action" type="button" aria-label="Next" onclick={onContinueFromActions} disabled={!cartAction || !activeOrgStagedItems.length}>Next Step</button>
+					<button
+						class="btn btn--ghost drawer-secondary-action"
+						type="button"
+						aria-label="Back"
+						onclick={() => onSetCartStep("list")}>Previous Step</button
+					>
+					<button
+						class="btn btn--primary drawer-primary-action"
+						type="button"
+						aria-label="Next"
+						onclick={onContinueFromActions}
+						disabled={!cartAction || !activeOrgStagedItems.length}>Next Step</button
+					>
 				{:else if cartStep === "confirm"}
-					<button class="btn btn--ghost drawer-secondary-action" type="button" aria-label="Back" onclick={() => onSetCartStep("actions")}>Previous Step</button>
+					<button
+						class="btn btn--ghost drawer-secondary-action"
+						type="button"
+						aria-label="Back"
+						onclick={() => onSetCartStep("actions")}>Previous Step</button
+					>
 					{#if cartAction === "compare"}
-						<button class="btn btn--primary drawer-primary-action" type="button" onclick={onRunCompare} disabled={!compareTargetUsername || isRunningCompare}>
+						<button
+							class="btn btn--primary drawer-primary-action"
+							type="button"
+							onclick={onRunCompare}
+							disabled={!compareTargetUsername || isRunningCompare}
+						>
 							Run Compare
 						</button>
 					{:else}
@@ -890,7 +1047,8 @@
 							class:btn--danger={cartAction !== "deploy"}
 							type="button"
 							onclick={onRunDelete}
-							disabled={!canRunDeleteAction || (runMode === "deploy" && isProductionLikeTarget && !deployTypedConfirmationMatches)}
+							disabled={!canRunDeleteAction ||
+								(runMode === "deploy" && isProductionLikeTarget && !deployTypedConfirmationMatches)}
 							aria-label={runActionAriaLabel}
 						>
 							{runActionLabel}
@@ -898,28 +1056,61 @@
 					{/if}
 				{:else}
 					{#if cartAction === "compare"}
-						<button class="btn btn--ghost drawer-secondary-action" type="button" onclick={onFinish} disabled={isRunningCompare}>
+						<button
+							class="btn btn--ghost drawer-secondary-action"
+							type="button"
+							onclick={onFinish}
+							disabled={isRunningCompare}
+						>
 							Finish & Close
 						</button>
-						<button class="btn btn--primary drawer-primary-action" type="button" onclick={onRunCompare} disabled={isRunningCompare}>
+						<button
+							class="btn btn--primary drawer-primary-action"
+							type="button"
+							onclick={onRunCompare}
+							disabled={isRunningCompare}
+						>
 							Retry Compare
 						</button>
 					{:else if canDeployValidatedResult}
-						<button class="btn btn--ghost drawer-secondary-action" type="button" onclick={onFinish} disabled={isRunningDeploy}>
+						<button
+							class="btn btn--ghost drawer-secondary-action"
+							type="button"
+							onclick={onFinish}
+							disabled={isRunningDeploy}
+						>
 							Finish & Close
 						</button>
-						<button class="btn btn--primary btn--danger drawer-primary-action" type="button" onclick={onDeployValidatedResult}>
+						<button
+							class="btn btn--primary btn--danger drawer-primary-action"
+							type="button"
+							onclick={onDeployValidatedResult}
+						>
 							Deploy
 						</button>
 					{:else if canDeployValidatedCrossOrgResult}
-						<button class="btn btn--ghost drawer-secondary-action" type="button" onclick={onFinish} disabled={isRunningDeploy}>
+						<button
+							class="btn btn--ghost drawer-secondary-action"
+							type="button"
+							onclick={onFinish}
+							disabled={isRunningDeploy}
+						>
 							Finish & Close
 						</button>
-						<button class="btn btn--primary drawer-primary-action" type="button" onclick={onDeployValidatedCrossOrgResult}>
+						<button
+							class="btn btn--primary drawer-primary-action"
+							type="button"
+							onclick={onDeployValidatedCrossOrgResult}
+						>
 							Deploy
 						</button>
 					{:else}
-						<button class="btn btn--primary drawer-finish-action" type="button" onclick={onFinish} disabled={isRunningDeploy}>
+						<button
+							class="btn btn--primary drawer-finish-action"
+							type="button"
+							onclick={onFinish}
+							disabled={isRunningDeploy}
+						>
 							Finish & Close
 						</button>
 					{/if}
@@ -933,10 +1124,7 @@
 			result={openDiffResult}
 			{sourceOrgLabel}
 			targetOrgLabel={compareTargetLabel}
-			onClose={() => openDiffResult = null}
+			onClose={() => (openDiffResult = null)}
 		/>
 	{/if}
 {/if}
-
-
-

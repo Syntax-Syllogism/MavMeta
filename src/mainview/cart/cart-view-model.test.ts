@@ -55,10 +55,7 @@ describe("cart view model", () => {
 
 		const groups = buildStagedItemGroups(stagedItems);
 
-		expect(groups.map((group) => group.metadataType)).toEqual([
-			"ApexClass",
-			"CustomObject",
-		]);
+		expect(groups.map((group) => group.metadataType)).toEqual(["ApexClass", "CustomObject"]);
 		expect(groups[0]?.items.map((item) => item.fullName)).toEqual([
 			"AccountController",
 			"ZetaController",
@@ -135,9 +132,9 @@ describe("cart view model", () => {
 			},
 		];
 
-		expect(
-			listEligibleTargetOrgs(orgs, "source@example.com").map((org) => org.username),
-		).toEqual(["target@example.com"]);
+		expect(listEligibleTargetOrgs(orgs, "source@example.com").map((org) => org.username)).toEqual([
+			"target@example.com",
+		]);
 	});
 
 	it("detects compare xml content", () => {

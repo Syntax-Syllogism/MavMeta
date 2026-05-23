@@ -48,10 +48,7 @@ type RetrieveConnection = DeployConnection & {
 			complete(): Promise<{ zipFile?: string }>;
 			on?(event: "error", listener: (error: Error) => void): unknown;
 			off?(event: "error", listener: (error: Error) => void): unknown;
-			removeListener?(
-				event: "error",
-				listener: (error: Error) => void,
-			): unknown;
+			removeListener?(event: "error", listener: (error: Error) => void): unknown;
 		};
 	};
 	getApiVersion(): string;
@@ -95,7 +92,9 @@ type CrossOrgDeployOperation = {
 };
 
 export type DeployServiceApi = {
-	startDestructiveDeploy(request: StartDestructiveDeployRequest): Promise<StartDestructiveDeployResponse>;
+	startDestructiveDeploy(
+		request: StartDestructiveDeployRequest,
+	): Promise<StartDestructiveDeployResponse>;
 	getDestructiveDeployStatus(operationId: string): Promise<DestructiveDeployStatusResponse>;
 	cancelDestructiveDeploy(operationId: string): Promise<CancelDestructiveDeployResponse>;
 	startCrossOrgDeploy(request: StartCrossOrgDeployRequest): Promise<StartCrossOrgDeployResponse>;
@@ -131,10 +130,13 @@ export class DeployService implements DeployServiceApi {
 		this.sleep = options.sleep ?? defaultSleep;
 		this.uuidFactory = options.uuidFactory ?? randomUUID;
 		this.now = options.now ?? Date.now;
-		this.completedOperationTtlMs = options.completedOperationTtlMs ?? DEFAULT_COMPLETED_OPERATION_TTL_MS;
+		this.completedOperationTtlMs =
+			options.completedOperationTtlMs ?? DEFAULT_COMPLETED_OPERATION_TTL_MS;
 	}
 
-	async startDestructiveDeploy(request: StartDestructiveDeployRequest): Promise<StartDestructiveDeployResponse> {
+	async startDestructiveDeploy(
+		request: StartDestructiveDeployRequest,
+	): Promise<StartDestructiveDeployResponse> {
 		this.pruneExpiredOperations();
 		const normalized = normalizeComponents(request.components);
 		const [supported, skipped] = partitionSupportedComponents(normalized);
@@ -196,7 +198,9 @@ export class DeployService implements DeployServiceApi {
 		return this.cancelOperation(operationId, this.operations);
 	}
 
-	async startCrossOrgDeploy(request: StartCrossOrgDeployRequest): Promise<StartCrossOrgDeployResponse> {
+	async startCrossOrgDeploy(
+		request: StartCrossOrgDeployRequest,
+	): Promise<StartCrossOrgDeployResponse> {
 		this.pruneExpiredOperations();
 		if (request.source.username === request.target.username) {
 			throw new ApiError(400, "INVALID_REQUEST", "Source and target orgs must be different.");
@@ -331,7 +335,7 @@ export class DeployService implements DeployServiceApi {
 				state: outcome.resultState,
 				message: outcome.success
 					? `${request.mode === "validate" ? "Validation" : "Deploy"} completed successfully for ${supported.length} component(s).`
-					: outcome.message ?? operation.message,
+					: (outcome.message ?? operation.message),
 				skipped: operation.skipped,
 				failed,
 				rawResult: finalPayload,
@@ -375,7 +379,9 @@ export class DeployService implements DeployServiceApi {
 		const startPayload = await readDeployStartPayload(startResponse);
 		const jobId = readJobId(startPayload) ?? readJobId(startResponse);
 		if (!jobId) {
-			throw new Error(`Salesforce did not return a deploy job id. ${summarizeResultShape(startPayload ?? startResponse)}`);
+			throw new Error(
+				`Salesforce did not return a deploy job id. ${summarizeResultShape(startPayload ?? startResponse)}`,
+			);
 		}
 		options.onJobId(jobId);
 
@@ -403,7 +409,9 @@ export class DeployService implements DeployServiceApi {
 		operation.message = "Retrieving source metadata from source org.";
 
 		try {
-			const sourceConnection = (await this.connectionFactory(request.source.username)) as RetrieveConnection;
+			const sourceConnection = (await this.connectionFactory(
+				request.source.username,
+			)) as RetrieveConnection;
 			const targetConnection = await this.connectionFactory(request.target.username);
 			const zipBuffer = await buildCrossOrgDeployZip(sourceConnection, supported);
 			operation.message = "Starting cross-org Metadata API deployment job.";
@@ -439,7 +447,7 @@ export class DeployService implements DeployServiceApi {
 				state: outcome.resultState,
 				message: outcome.success
 					? `${request.mode === "validate" ? "Validation" : "Deploy"} completed successfully for ${supported.length} component(s).`
-					: outcome.message ?? operation.message,
+					: (outcome.message ?? operation.message),
 				skipped: operation.skipped,
 				failed,
 				rawResult: finalPayload,
@@ -471,7 +479,9 @@ export class DeployService implements DeployServiceApi {
 	private async resolveOrgEnvironment(username: string): Promise<OrgEnvironment> {
 		try {
 			const connection = await this.connectionFactory(username);
-			const queryResult = (await connection.query("SELECT Id, IsSandbox, TrialExpirationDate FROM Organization")) as {
+			const queryResult = (await connection.query(
+				"SELECT Id, IsSandbox, TrialExpirationDate FROM Organization",
+			)) as {
 				records?: Array<{ IsSandbox?: boolean; TrialExpirationDate?: string | null }>;
 			};
 			const record = queryResult.records?.[0];
@@ -498,7 +508,10 @@ export class DeployService implements DeployServiceApi {
 	}
 }
 
-async function buildCrossOrgDeployZip(sourceConnection: RetrieveConnection, components: HitListComponentInput[]) {
+async function buildCrossOrgDeployZip(
+	sourceConnection: RetrieveConnection,
+	components: HitListComponentInput[],
+) {
 	const outputZip = new JSZip();
 	const apiVersion = sourceConnection.getApiVersion();
 	const byType = new Map<string, string[]>();
@@ -580,10 +593,7 @@ async function completeRetrieveLocator(
 		complete(): Promise<{ zipFile?: string }>;
 		on?(event: "error", listener: (error: Error) => void): unknown;
 		off?(event: "error", listener: (error: Error) => void): unknown;
-		removeListener?(
-			event: "error",
-			listener: (error: Error) => void,
-		): unknown;
+		removeListener?(event: "error", listener: (error: Error) => void): unknown;
 	},
 	component: HitListComponentInput,
 ) {
@@ -599,10 +609,10 @@ async function completeRetrieveLocator(
 		const resolvedError =
 			error instanceof Error
 				? error
-				: emittedError ??
+				: (emittedError ??
 					new Error(
 						`Unknown retrieve failure for ${component.metadataType}:${component.fullName}.`,
-					);
+					));
 		throw new Error(
 			`Source retrieve failed for ${component.metadataType}:${component.fullName}: ${redactSecrets(resolvedError.message)}`,
 		);
@@ -637,7 +647,11 @@ function partitionSupportedComponents(components: HitListComponentInput[]) {
 	const skipped: DeploySkippedComponent[] = [];
 	for (const component of components) {
 		if (!component.metadataType || !component.fullName) {
-			skipped.push({ metadataType: component.metadataType, fullName: component.fullName, reason: "Missing metadata type or full name." });
+			skipped.push({
+				metadataType: component.metadataType,
+				fullName: component.fullName,
+				reason: "Missing metadata type or full name.",
+			});
 			continue;
 		}
 		if (!validateMetadataName(component.fullName)) {
@@ -650,7 +664,11 @@ function partitionSupportedComponents(components: HitListComponentInput[]) {
 		}
 		const compatibilityIssue = getDestructiveCompatibilityIssue(component.metadataType);
 		if (compatibilityIssue) {
-			skipped.push({ metadataType: component.metadataType, fullName: component.fullName, reason: compatibilityIssue });
+			skipped.push({
+				metadataType: component.metadataType,
+				fullName: component.fullName,
+				reason: compatibilityIssue,
+			});
 			continue;
 		}
 		supported.push(component);
@@ -761,7 +779,11 @@ function readJobId(result: unknown): string | undefined {
 		if (typeof candidate === "string" && candidate.trim()) return candidate.trim();
 	}
 	for (const [key, fieldValue] of Object.entries(record)) {
-		if (typeof fieldValue === "string" && (key.toLowerCase().includes("id") || key.toLowerCase().includes("job")) && fieldValue.trim()) {
+		if (
+			typeof fieldValue === "string" &&
+			(key.toLowerCase().includes("id") || key.toLowerCase().includes("job")) &&
+			fieldValue.trim()
+		) {
 			return fieldValue.trim();
 		}
 	}
@@ -785,7 +807,14 @@ function readProgress(rawResult: Record<string, unknown>) {
 	const deployed = readNumberField(rawResult, "numberComponentsDeployed");
 	const errors = readNumberField(rawResult, "numberComponentErrors");
 	const processed = Math.max(0, deployed + errors);
-	const percentComplete = total > 0 ? (isTerminalState(state) ? 100 : Math.min(99, Math.round((processed / total) * 100))) : (isTerminalState(state) ? 100 : 0);
+	const percentComplete =
+		total > 0
+			? isTerminalState(state)
+				? 100
+				: Math.min(99, Math.round((processed / total) * 100))
+			: isTerminalState(state)
+				? 100
+				: 0;
 	return {
 		state,
 		processed,
@@ -807,27 +836,72 @@ function readNumberField(rawResult: Record<string, unknown>, field: string) {
 }
 
 function isTerminalState(state: string) {
-	return state === "Succeeded" || state === "SucceededPartial" || state === "Failed" || state === "Canceled" || state === "Canceling" || state === "FinalizingDeployFailed";
+	return (
+		state === "Succeeded" ||
+		state === "SucceededPartial" ||
+		state === "Failed" ||
+		state === "Canceled" ||
+		state === "Canceling" ||
+		state === "FinalizingDeployFailed"
+	);
 }
 
-function resolveDeployOutcome(state: string, rawResult: Record<string, unknown>, failed: DeployFailedComponent[]) {
+function resolveDeployOutcome(
+	state: string,
+	rawResult: Record<string, unknown>,
+	failed: DeployFailedComponent[],
+) {
 	const successField = rawResult.success;
 	const successFromPayload = typeof successField === "boolean" ? successField : undefined;
-	if (state === "Succeeded") return { success: true, status: "succeeded" as const, resultState: "Succeeded" as const, message: undefined };
-	if (state === "Canceled" || state === "Canceling") return { success: false, status: "canceled" as const, resultState: "Canceled" as const, message: "Deploy canceled by user." };
+	if (state === "Succeeded")
+		return {
+			success: true,
+			status: "succeeded" as const,
+			resultState: "Succeeded" as const,
+			message: undefined,
+		};
+	if (state === "Canceled" || state === "Canceling")
+		return {
+			success: false,
+			status: "canceled" as const,
+			resultState: "Canceled" as const,
+			message: "Deploy canceled by user.",
+		};
 	if (state === "SucceededPartial") {
-		const summary = failed.length ? `Deploy completed with partial failures (${failed.length} component failure${failed.length === 1 ? "" : "s"}).` : "Deploy completed with partial failures.";
-		return { success: false, status: "failed" as const, resultState: "PartiallySucceeded" as const, message: summary };
+		const summary = failed.length
+			? `Deploy completed with partial failures (${failed.length} component failure${failed.length === 1 ? "" : "s"}).`
+			: "Deploy completed with partial failures.";
+		return {
+			success: false,
+			status: "failed" as const,
+			resultState: "PartiallySucceeded" as const,
+			message: summary,
+		};
 	}
-	if (successFromPayload === true) return { success: true, status: "succeeded" as const, resultState: "Succeeded" as const, message: undefined };
-	return { success: false, status: "failed" as const, resultState: "Failed" as const, message: undefined };
+	if (successFromPayload === true)
+		return {
+			success: true,
+			status: "succeeded" as const,
+			resultState: "Succeeded" as const,
+			message: undefined,
+		};
+	return {
+		success: false,
+		status: "failed" as const,
+		resultState: "Failed" as const,
+		message: undefined,
+	};
 }
 
 function extractFailedComponents(rawResult: Record<string, unknown>): DeployFailedComponent[] {
 	const details = toObject(rawResult.details);
 	if (!details) return [];
 	const componentFailures = details.componentFailures;
-	const failures = Array.isArray(componentFailures) ? componentFailures : componentFailures ? [componentFailures] : [];
+	const failures = Array.isArray(componentFailures)
+		? componentFailures
+		: componentFailures
+			? [componentFailures]
+			: [];
 	return failures
 		.map((failure) => {
 			const failureRecord = toObject(failure);

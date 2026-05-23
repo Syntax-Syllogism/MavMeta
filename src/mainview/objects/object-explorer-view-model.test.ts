@@ -207,7 +207,9 @@ describe("object explorer view model", () => {
 			expect(childItemToComponentSummary(fieldItem).fullName).toBe("Account.Legacy_Code__c");
 			expect(childItemToComponentSummary(fieldItem).type).toBe("CustomField");
 			expect(childItemToComponentSummary(ruleItem).type).toBe("ValidationRule");
-			expect(childItemToComponentSummary(cmdtFieldItem).fullName).toBe("Feature_Flag__mdt.Is_Enabled__c");
+			expect(childItemToComponentSummary(cmdtFieldItem).fullName).toBe(
+				"Feature_Flag__mdt.Is_Enabled__c",
+			);
 			expect(childItemToComponentSummary(cmdtFieldItem).parentName).toBe("Feature_Flag__mdt");
 		});
 	});

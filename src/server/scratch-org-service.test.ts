@@ -10,7 +10,11 @@ function makeOrg(username: string) {
 const fixedTime = 1_700_000_000_000;
 
 type ServiceOverrides = {
-	scratchOrgCreateFn?: (hubOrg: Org, orgConfig: Record<string, unknown>, durationDays: number) => Promise<{ username?: string; warnings: string[] }>;
+	scratchOrgCreateFn?: (
+		hubOrg: Org,
+		orgConfig: Record<string, unknown>,
+		durationDays: number,
+	) => Promise<{ username?: string; warnings: string[] }>;
 	orgFactory?: (username: string) => Promise<Org>;
 	authInfoFactory?: (username: string) => Promise<{ setAlias: (alias: string) => Promise<void> }>;
 };
@@ -27,7 +31,9 @@ function makeService(overrides: ServiceOverrides = {}) {
 
 describe("ScratchOrgService", () => {
 	let setAliasMock: ReturnType<typeof vi.fn>;
-	let authInfoFactory: NonNullable<ConstructorParameters<typeof ScratchOrgService>[0]>["authInfoFactory"];
+	let authInfoFactory: NonNullable<
+		ConstructorParameters<typeof ScratchOrgService>[0]
+	>["authInfoFactory"];
 
 	beforeEach(() => {
 		setAliasMock = vi.fn().mockResolvedValue(undefined);
@@ -183,7 +189,9 @@ describe("ScratchOrgService", () => {
 
 	it("prunes completed operations that exceed TTL", async () => {
 		let currentTime = fixedTime;
-		const scratchOrgCreateFn = vi.fn().mockResolvedValue({ username: "a@example.com", warnings: [] });
+		const scratchOrgCreateFn = vi
+			.fn()
+			.mockResolvedValue({ username: "a@example.com", warnings: [] });
 
 		const service = new ScratchOrgService({
 			uuidFactory: (() => {

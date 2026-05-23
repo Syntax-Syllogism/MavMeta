@@ -1,6 +1,6 @@
 {
 	"name": "@syntax-syllogism/mavmeta",
-	"version": "0.2.0",
+	"version": "0.2.1",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
@@ -39,7 +39,26 @@
 		"verify:no-unapproved-https": "node scripts/verify-no-unapproved-https.mjs",
 		"screenshots:capture": "node scripts/capture-screenshots.mjs",
 		"test": "vitest run",
-		"typecheck": "tsc --noEmit"
+		"typecheck": "tsc --noEmit",
+		"lint": "eslint .",
+		"lint:fix": "eslint . --fix",
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"markdownlint": "markdownlint-cli2 \"**/*.md\" \"#node_modules\""
+	},
+	"simple-git-hooks": {
+		"pre-commit": "npx lint-staged"
+	},
+	"lint-staged": {
+		"*.{ts,svelte}": [
+			"eslint --fix",
+			"prettier --write"
+		],
+		"*.{html,css,json}": "prettier --write",
+		"*.md": [
+			"markdownlint-cli2 --fix",
+			"prettier --write"
+		]
 	},
 	"dependencies": {
 		"@codemirror/lang-css": "6.3.1",
@@ -61,13 +80,23 @@
 		"@types/node": "25.9.1",
 		"concurrently": "9.2.1",
 		"esbuild": "^0.28.0",
+		"eslint": "^10.4.0",
+		"eslint-config-prettier": "^10.1.8",
+		"eslint-plugin-svelte": "^3.17.1",
+		"globals": "^17.6.0",
 		"happy-dom": "20.9.0",
 		"jsdom": "29.1.1",
 		"light-my-request": "6.6.0",
+		"lint-staged": "^16.4.0",
+		"markdownlint-cli2": "^0.22.1",
 		"playwright": "^1.60.0",
+		"prettier": "^3.8.3",
+		"prettier-plugin-svelte": "^4.0.1",
+		"simple-git-hooks": "^2.13.1",
 		"svelte": "5.55.8",
 		"tsx": "4.22.3",
 		"typescript": "6.0.3",
+		"typescript-eslint": "^8.59.4",
 		"vite": "8.0.13",
 		"vitest": "4.1.6"
 	}

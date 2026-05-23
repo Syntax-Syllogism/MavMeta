@@ -53,7 +53,8 @@ type CreateAppOptions = {
 };
 
 const SECURITY_HEADERS: Record<string, string> = {
-	"content-security-policy": "default-src 'self'; connect-src 'self' https://*.salesforce.com https://*.force.com https://*.lightning.force.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
+	"content-security-policy":
+		"default-src 'self'; connect-src 'self' https://*.salesforce.com https://*.force.com https://*.lightning.force.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
 	"x-content-type-options": "nosniff",
 	"x-frame-options": "DENY",
 	"referrer-policy": "no-referrer",
@@ -111,11 +112,7 @@ export function createApp(options: CreateAppOptions = {}) {
 		if (!request.url.startsWith("/api/")) {
 			return;
 		}
-		if (
-			allowDevSessionBootstrap &&
-			request.method === "GET" &&
-			request.url === "/api/session"
-		) {
+		if (allowDevSessionBootstrap && request.method === "GET" && request.url === "/api/session") {
 			// CSRF defense for dev bootstrap:
 			// browser clients must send a custom header, which triggers CORS preflight,
 			// and when Origin is present it must be allowlisted.
@@ -128,7 +125,9 @@ export function createApp(options: CreateAppOptions = {}) {
 		}
 
 		if (!hasMatchingSessionToken(request.headers["x-mavmeta-session"], tokenBuffer)) {
-			reply.code(401).send({ code: "INVALID_SESSION", message: "Invalid or missing session token." });
+			reply
+				.code(401)
+				.send({ code: "INVALID_SESSION", message: "Invalid or missing session token." });
 			return;
 		}
 	});
@@ -185,13 +184,12 @@ export function createApp(options: CreateAppOptions = {}) {
 		const payload: ErrorPayload = {
 			code: error instanceof ApiError ? error.code : "INTERNAL_ERROR",
 			message:
-				error instanceof Error
-					? redactSecrets(error.message)
-					: "Unexpected backend failure.",
+				error instanceof Error ? redactSecrets(error.message) : "Unexpected backend failure.",
 		};
 
 		if (statusCode >= 500) {
-			const safeErrorMessage = error instanceof Error ? redactSecrets(error.message) : "Unexpected backend failure.";
+			const safeErrorMessage =
+				error instanceof Error ? redactSecrets(error.message) : "Unexpected backend failure.";
 			request.log.error({ err: { message: safeErrorMessage } }, "Internal server error");
 		}
 
@@ -211,9 +209,7 @@ export function createApp(options: CreateAppOptions = {}) {
 	app.post("/api/orgs/reauth", async (request) =>
 		orgService.reauthOrg(readOrgTarget(request.body)),
 	);
-	app.post("/api/orgs/open", async (request) =>
-		orgService.openOrg(readOrgTarget(request.body)),
-	);
+	app.post("/api/orgs/open", async (request) => orgService.openOrg(readOrgTarget(request.body)));
 	app.post("/api/orgs/logout", async (request) =>
 		orgService.logoutOrg(readOrgTarget(request.body)),
 	);
@@ -231,19 +227,13 @@ export function createApp(options: CreateAppOptions = {}) {
 		metadataService.listMetadataTypes(readListMetadataTypesRequest(request.body)),
 	);
 	app.post("/api/metadata/components", async (request) =>
-		metadataService.listMetadataComponents(
-			readListMetadataComponentsRequest(request.body),
-		),
+		metadataService.listMetadataComponents(readListMetadataComponentsRequest(request.body)),
 	);
 	app.post("/api/metadata/component-source", async (request) =>
-		metadataService.getComponentSource(
-			readGetComponentSourceRequest(request.body),
-		),
+		metadataService.getComponentSource(readGetComponentSourceRequest(request.body)),
 	);
 	app.post("/api/metadata/diff", async (request) =>
-		metadataService.getCrossOrgComponentDiff(
-			readCrossOrgDiffRequest(request.body),
-		),
+		metadataService.getCrossOrgComponentDiff(readCrossOrgDiffRequest(request.body)),
 	);
 
 	app.post("/api/objects/list", async (request) =>
@@ -254,9 +244,7 @@ export function createApp(options: CreateAppOptions = {}) {
 	);
 
 	app.post("/api/deploy/start", async (request) =>
-		deployService.startDestructiveDeploy(
-			readStartDestructiveDeployRequest(request.body),
-		),
+		deployService.startDestructiveDeploy(readStartDestructiveDeployRequest(request.body)),
 	);
 	app.post("/api/deploy/status", async (request) =>
 		deployService.getDestructiveDeployStatus(
@@ -418,21 +406,13 @@ function readStringField(
 
 	if (value === undefined || value === null) {
 		if (options.required) {
-			throw new ApiError(
-				400,
-				"INVALID_REQUEST",
-				`Missing required field "${fieldName}".`,
-			);
+			throw new ApiError(400, "INVALID_REQUEST", `Missing required field "${fieldName}".`);
 		}
 		return undefined;
 	}
 
 	if (typeof value !== "string" || !value.trim()) {
-		throw new ApiError(
-			400,
-			"INVALID_REQUEST",
-			`Field "${fieldName}" must be a non-empty string.`,
-		);
+		throw new ApiError(400, "INVALID_REQUEST", `Field "${fieldName}" must be a non-empty string.`);
 	}
 
 	return value.trim();
@@ -442,11 +422,7 @@ function readOrgTarget(body: unknown): { username: string; startPath?: string } 
 	const objectBody = readObjectBody(body);
 	const startPath = readStringField(objectBody, "startPath");
 	if (startPath && !startPath.startsWith("/")) {
-		throw new ApiError(
-			400,
-			"INVALID_REQUEST",
-			'Field "startPath" must start with "/".',
-		);
+		throw new ApiError(400, "INVALID_REQUEST", 'Field "startPath" must start with "/".');
 	}
 	return {
 		username: readStringField(objectBody, "username", { required: true }) as string,
@@ -457,8 +433,7 @@ function readOrgTarget(body: unknown): { username: string; startPath?: string } 
 function readAuthOrgRequest(body: unknown): { loginUrl: string; alias?: string } {
 	const objectBody = readObjectBody(body);
 	return {
-		loginUrl:
-			readStringField(objectBody, "loginUrl", { required: true }) ?? "",
+		loginUrl: readStringField(objectBody, "loginUrl", { required: true }) ?? "",
 		alias: readStringField(objectBody, "alias"),
 	};
 }
@@ -510,8 +485,7 @@ function readListMetadataComponentsRequest(body: unknown): {
 				required: true,
 			}) as string,
 		},
-		metadataType:
-			readStringField(objectBody, "metadataType", { required: true }) ?? "",
+		metadataType: readStringField(objectBody, "metadataType", { required: true }) ?? "",
 		folder: readStringField(objectBody, "folder"),
 		search: readStringField(objectBody, "search"),
 	};
@@ -528,20 +502,12 @@ function readStartDestructiveDeployRequest(body: unknown): {
 		required: true,
 	}) as string;
 	if (mode !== "validate" && mode !== "deploy") {
-		throw new ApiError(
-			400,
-			"INVALID_REQUEST",
-			'Field "mode" must be "validate" or "deploy".',
-		);
+		throw new ApiError(400, "INVALID_REQUEST", 'Field "mode" must be "validate" or "deploy".');
 	}
 
 	const componentsValue = objectBody.components;
 	if (!Array.isArray(componentsValue)) {
-		throw new ApiError(
-			400,
-			"INVALID_REQUEST",
-			'Field "components" must be an array.',
-		);
+		throw new ApiError(400, "INVALID_REQUEST", 'Field "components" must be an array.');
 	}
 
 	const components = componentsValue.map((component, index) => {
@@ -605,11 +571,7 @@ function readStartCrossOrgDeployRequest(body: unknown): {
 	const targetBody = readObjectBody(objectBody.target);
 	const mode = readStringField(objectBody, "mode", { required: true }) as string;
 	if (mode !== "validate" && mode !== "deploy") {
-		throw new ApiError(
-			400,
-			"INVALID_REQUEST",
-			'Field "mode" must be "validate" or "deploy".',
-		);
+		throw new ApiError(400, "INVALID_REQUEST", 'Field "mode" must be "validate" or "deploy".');
 	}
 	const componentsValue = objectBody.components;
 	if (!Array.isArray(componentsValue)) {
@@ -657,7 +619,11 @@ function readRestExecuteRequest(body: unknown): RestExecuteRequest {
 	const path = readStringField(objectBody, "path", { required: true }) as string;
 
 	if (!["GET", "POST", "PATCH", "DELETE"].includes(methodRaw)) {
-		throw new ApiError(400, "INVALID_REQUEST", 'Field "method" must be GET, POST, PATCH, or DELETE.');
+		throw new ApiError(
+			400,
+			"INVALID_REQUEST",
+			'Field "method" must be GET, POST, PATCH, or DELETE.',
+		);
 	}
 
 	const method = methodRaw as RestExecuteRequest["method"];
@@ -714,8 +680,16 @@ function readSoqlRunRequest(body: unknown): RunQueryRequest {
 	const previewLimitRaw = objectBody.previewLimit;
 	let previewLimit: number | undefined;
 	if (previewLimitRaw !== undefined) {
-		if (typeof previewLimitRaw !== "number" || !Number.isInteger(previewLimitRaw) || previewLimitRaw <= 0) {
-			throw new ApiError(400, "INVALID_REQUEST", 'Field "previewLimit" must be a positive integer when provided.');
+		if (
+			typeof previewLimitRaw !== "number" ||
+			!Number.isInteger(previewLimitRaw) ||
+			previewLimitRaw <= 0
+		) {
+			throw new ApiError(
+				400,
+				"INVALID_REQUEST",
+				'Field "previewLimit" must be a positive integer when provided.',
+			);
 		}
 		previewLimit = previewLimitRaw;
 	}
@@ -723,7 +697,11 @@ function readSoqlRunRequest(body: unknown): RunQueryRequest {
 	let includeAllPages: boolean | undefined;
 	if (includeAllPagesRaw !== undefined) {
 		if (typeof includeAllPagesRaw !== "boolean") {
-			throw new ApiError(400, "INVALID_REQUEST", 'Field "includeAllPages" must be a boolean when provided.');
+			throw new ApiError(
+				400,
+				"INVALID_REQUEST",
+				'Field "includeAllPages" must be a boolean when provided.',
+			);
 		}
 		includeAllPages = includeAllPagesRaw;
 	}
@@ -767,7 +745,9 @@ function readSoqlBulkResultRequest(query: unknown): BulkQueryResultRequest {
 
 function readStartScratchOrgCreateRequest(body: unknown) {
 	const objectBody = readObjectBody(body);
-	const devHubUsername = readStringField(objectBody, "devHubUsername", { required: true }) as string;
+	const devHubUsername = readStringField(objectBody, "devHubUsername", {
+		required: true,
+	}) as string;
 	const alias = readStringField(objectBody, "alias");
 	const durationDaysRaw = objectBody.durationDays;
 
@@ -776,7 +756,11 @@ function readStartScratchOrgCreateRequest(body: unknown) {
 	}
 
 	const definitionValue = objectBody.definition;
-	if (typeof definitionValue !== "object" || definitionValue === null || Array.isArray(definitionValue)) {
+	if (
+		typeof definitionValue !== "object" ||
+		definitionValue === null ||
+		Array.isArray(definitionValue)
+	) {
 		throw new ApiError(400, "INVALID_REQUEST", 'Field "definition" must be an object.');
 	}
 
@@ -856,9 +840,10 @@ function readCrossOrgDiffRequest(body: unknown): CrossOrgDiffRequest {
 	};
 }
 
-function readListObjectChildrenRequest(
-	body: unknown,
-): { target: { username: string }; objectApiName: string } {
+function readListObjectChildrenRequest(body: unknown): {
+	target: { username: string };
+	objectApiName: string;
+} {
 	const objectBody = readObjectBody(body);
 	const targetBody = readObjectBody(objectBody.target);
 	return {

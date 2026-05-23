@@ -153,7 +153,7 @@ async function checkConflict(
 	tooling: ToolingConnection,
 	bundleId: string,
 	expectedLastModifiedDate: string,
-): Promise<DeployLwcBundleResponse & { status: "conflict" } | null> {
+): Promise<(DeployLwcBundleResponse & { status: "conflict" }) | null> {
 	const result = await tooling.query(
 		`SELECT LastModifiedDate FROM LightningComponentBundle WHERE Id = '${bundleId}'`,
 	);
@@ -181,7 +181,6 @@ async function checkConflict(
 	};
 }
 
-
 // LWC Tooling API compile errors: "LWC1099: message\n  lwc/comp/file.js:line:col"
 const LWC_ERROR_RE = /LWC\d+:\s*([^\n]+)(?:\n\s+([\w/.-]+):(\d+):(\d+))?/g;
 
@@ -206,7 +205,11 @@ function parseLwcErrors(err: unknown): LwcCompileError[] {
 
 function validateBundleId(bundleId: string): void {
 	if (!SALESFORCE_ID_REGEX.test(bundleId)) {
-		throw new ApiError(400, "INVALID_REQUEST", "bundleId must be a valid 15 or 18-character Salesforce Id.");
+		throw new ApiError(
+			400,
+			"INVALID_REQUEST",
+			"bundleId must be a valid 15 or 18-character Salesforce Id.",
+		);
 	}
 }
 

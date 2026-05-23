@@ -52,7 +52,12 @@ describe("OrgService", () => {
 		salesforceCoreMocks.orgCreate.mockImplementation(async ({ aliasOrUsername }) => ({
 			getConnection: () => ({
 				query: async () => ({
-					records: [{ TrialExpirationDate: aliasOrUsername === "scratch@example.com" ? "2026-06-01T00:00:00.000Z" : null }],
+					records: [
+						{
+							TrialExpirationDate:
+								aliasOrUsername === "scratch@example.com" ? "2026-06-01T00:00:00.000Z" : null,
+						},
+					],
 				}),
 			}),
 		}));
@@ -152,7 +157,9 @@ describe("OrgService", () => {
 			username: "sandbox@example.com",
 		});
 		expect(result.activeOrg?.username).toBe("sandbox@example.com");
-		expect(result.orgs.find((org) => org.username === "sandbox@example.com")?.isDefault).toBe(false);
+		expect(result.orgs.find((org) => org.username === "sandbox@example.com")?.isDefault).toBe(
+			false,
+		);
 	});
 
 	it("maps scratch org trial expiration date from organization query", async () => {
@@ -232,20 +239,21 @@ describe("OrgService", () => {
 
 	it("returns an actionable auth error when the Salesforce OAuth callback port is busy", async () => {
 		salesforceCoreMocks.webOAuthServerCreate.mockResolvedValue({
-			start: vi.fn().mockRejectedValue(
-				new Error("Cannot start the OAuth redirect server on port 1717."),
-			),
+			start: vi
+				.fn()
+				.mockRejectedValue(new Error("Cannot start the OAuth redirect server on port 1717.")),
 			getAuthorizationUrl: vi.fn(),
 			authorizeAndSave: vi.fn(),
 		});
 		const service = new OrgService(inMemoryActiveOrgStore());
 
-		await expect(service.authOrg({ loginUrl: "https://login.salesforce.com" }))
-			.rejects.toMatchObject({
-				statusCode: 409,
-				code: "AUTH_PORT_IN_USE",
-				message: expect.stringContaining("localhost port 1717 is already in use"),
-			});
+		await expect(
+			service.authOrg({ loginUrl: "https://login.salesforce.com" }),
+		).rejects.toMatchObject({
+			statusCode: 409,
+			code: "AUTH_PORT_IN_USE",
+			message: expect.stringContaining("localhost port 1717 is already in use"),
+		});
 	});
 
 	it("rejects a second auth request while one is already in progress", async () => {
@@ -279,11 +287,10 @@ describe("OrgService", () => {
 		const firstAuth = service.authOrg({ loginUrl: "login.salesforce.com" });
 		await Promise.resolve();
 
-		await expect(service.authOrg({ loginUrl: "login.salesforce.com" }))
-			.rejects.toMatchObject({
-				statusCode: 409,
-				code: "AUTH_IN_PROGRESS",
-			});
+		await expect(service.authOrg({ loginUrl: "login.salesforce.com" })).rejects.toMatchObject({
+			statusCode: 409,
+			code: "AUTH_IN_PROGRESS",
+		});
 
 		resolveStart?.();
 		await expect(firstAuth).resolves.toMatchObject({
