@@ -90,12 +90,34 @@ async function prepareSoqlScreenshot(page) {
 	await sobjectInput.fill("Account");
 	await sobjectInput.press("Enter");
 
-	// Wait for fields to load after object selection
-	await page.waitForSelector(".soql-field", { timeout: WAIT_TIMEOUT_MS });
+	// Primary path: typing exact API name auto-selects object.
+	// Fallback path: use dropdown option click if fields did not load yet.
+	let fieldsLoaded = true;
+	try {
+		await page.waitForSelector(".soql-field", { timeout: 10000 });
+	} catch {
+		fieldsLoaded = false;
+	}
+	if (!fieldsLoaded) {
+		const accountOption = page
+			.locator("#soql-sobject-options .soql-autocomplete-option")
+			.filter({ hasText: /\bAccount\b/i })
+			.first();
+		if ((await accountOption.count()) > 0) {
+			await accountOption.click();
+		}
+		await page.waitForSelector(".soql-field", { timeout: WAIT_TIMEOUT_MS });
+	}
+
 	await page.waitForFunction(() => document.querySelectorAll(".soql-field").length > 1);
 
 	// Id is selected by default; add Name
-	const nameField = page.locator(".soql-field", { hasText: /^Name/ }).first();
+	const nameField = page
+		.locator(".soql-field", {
+			has: page.locator(".soql-field__name", { hasText: /^Name$/ }),
+		})
+		.first();
+	await nameField.scrollIntoViewIfNeeded();
 	await nameField.click();
 	await page.waitForTimeout(500);
 }

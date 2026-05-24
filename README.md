@@ -26,6 +26,7 @@ MavMeta is a powerful, localhost control center designed specifically for Salesf
 
 - **🧪 Advanced Tools**
   - **REST Explorer:** Test and explore Salesforce APIs with a built-in interactive playground.
+  - **SOQL Explorer:** Compose, run, and iterate on SOQL queries against any connected org with instant results. Export results to .csv or .json files.
   - **LWC Playground:** Experiment with and preview Lightning Web Components in a local sandbox.
 
 - **🎨 Modern User Experience**
