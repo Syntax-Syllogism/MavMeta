@@ -1,20 +1,8 @@
-﻿<script module lang="ts">
-	import type { ChildMetadataItem, ObjectSummary } from "../../shared/object-explorer";
-
-	export const objectListCache = new Map<string, ObjectSummary[]>();
-	export const objectChildrenCache = new Map<
-		string,
-		{
-			children: Record<string, ChildMetadataItem[]>;
-			errors: Array<{ metadataType: string; message: string }>;
-		}
-	>();
-</script>
-
-<script lang="ts">
-	import { onMount } from "svelte";
+﻿<script lang="ts">
+	import { onDestroy, onMount } from "svelte";
 	import { backendClient } from "../backend/backend-client";
 	import type { MetadataComponentSummary } from "../../shared/metadata";
+	import type { OrgSummary } from "../../shared/org";
 	import {
 		OBJECT_CHILD_METADATA_TYPES,
 		type ChildMetadataItem,
@@ -26,7 +14,10 @@
 		childItemToComponentSummary,
 		getObjectTypeLabel,
 		formatChildLabel,
+		isStageableCustomFieldChild,
 	} from "./object-explorer-view-model";
+	import { objectChildrenCache, objectListCache } from "./object-explorer-cache";
+	import FieldAccessModal from "./FieldAccessModal.svelte";
 
 	let {
 		activeOrg,
@@ -34,7 +25,7 @@
 		onToggleStagedChild,
 		onToggleAllStagedChildren,
 	}: {
-		activeOrg: { alias?: string; username: string } | undefined;
+		activeOrg: OrgSummary | undefined;
 		onIsChildStaged: (component: MetadataComponentSummary, metadataType: string) => boolean;
 		onToggleStagedChild: (component: MetadataComponentSummary, metadataType: string) => void;
 		onToggleAllStagedChildren: (
@@ -61,12 +52,44 @@
 	let childSource = $state<string | undefined>();
 	let childSourceError = $state<string | undefined>();
 	let currentSourceRequestId = 0;
+	let openFieldActionMenuRowId = $state<string | null>(null);
+	let selectedFieldForAccess = $state<{ sobjectType: string; fieldFullName: string } | undefined>();
 
 	const filteredObjects = $derived(objects.filter((obj) => matchesObjectSearch(obj, objectSearch)));
 
 	const selectedObject = $derived(objects.find((obj) => obj.apiName === selectedObjectApiName));
 
 	const activeChildren = $derived(children[activeCategory] ?? []);
+
+	let childSortKey = $state<string | null>(null);
+	let childSortDir = $state<"asc" | "desc">("asc");
+
+	function toggleChildSort(key: string) {
+		if (childSortKey === key) {
+			childSortDir = childSortDir === "asc" ? "desc" : "asc";
+		} else {
+			childSortKey = key;
+			childSortDir = "asc";
+		}
+	}
+
+	const sortedActiveChildren = $derived.by(() => {
+		if (!childSortKey) return activeChildren;
+		const k = childSortKey as keyof ChildMetadataItem;
+		return [...activeChildren].sort((a, b) => {
+			const av = String(a[k] ?? "");
+			const bv = String(b[k] ?? "");
+			const cmp = av.localeCompare(bv, undefined, { sensitivity: "base" });
+			return childSortDir === "asc" ? cmp : -cmp;
+		});
+	});
+
+	const isCustomFieldCategory = $derived(activeCategory === "CustomField");
+	const stageableChildren = $derived(
+		isCustomFieldCategory
+			? activeChildren.filter((child) => isStageableCustomFieldChild(child))
+			: activeChildren,
+	);
 
 	const selectedChild = $derived(
 		activeChildren.find((item) => item.fullName === selectedChildFullName),
@@ -106,9 +129,12 @@
 		if (selectedObjectApiName === apiName) return;
 		selectedObjectApiName = apiName;
 		selectedChildFullName = undefined;
+		openFieldActionMenuRowId = null;
+		selectedFieldForAccess = undefined;
 		children = {};
 		childErrors = [];
 		activeCategory = "CustomField";
+		childSortKey = null;
 		await loadObjectChildren(apiName);
 	}
 
@@ -191,6 +217,7 @@
 	}
 
 	function toggleStaged(item: ChildMetadataItem) {
+		if (!canStageChild(item)) return;
 		const component = childItemToComponentSummary(item);
 		onToggleStagedChild(component, item.metadataType);
 	}
@@ -198,6 +225,23 @@
 	function isStaged(item: ChildMetadataItem) {
 		const component = childItemToComponentSummary(item);
 		return onIsChildStaged(component, item.metadataType);
+	}
+
+	function canStageChild(item: ChildMetadataItem): boolean {
+		if (activeCategory !== "CustomField") return true;
+		return isStageableCustomFieldChild(item);
+	}
+
+	function toggleFieldActionMenu(rowId: string) {
+		openFieldActionMenuRowId = openFieldActionMenuRowId === rowId ? null : rowId;
+	}
+
+	function openFieldAccessModal(item: ChildMetadataItem) {
+		openFieldActionMenuRowId = null;
+		selectedFieldForAccess = {
+			sobjectType: item.parentObject,
+			fieldFullName: item.fullName,
+		};
 	}
 
 	function formatDate(iso: string | undefined): string {
@@ -209,9 +253,28 @@
 	}
 
 	onMount(() => {
+		const onDocumentMouseDown = (event: MouseEvent) => {
+			if (!(event.target instanceof Element)) {
+				openFieldActionMenuRowId = null;
+				return;
+			}
+			if (!event.target.closest("details.action-menu")) {
+				openFieldActionMenuRowId = null;
+			}
+		};
+		document.addEventListener("mousedown", onDocumentMouseDown);
+
 		if (activeOrg) {
 			void loadObjects();
 		}
+
+		return () => {
+			document.removeEventListener("mousedown", onDocumentMouseDown);
+		};
+	});
+
+	onDestroy(() => {
+		openFieldActionMenuRowId = null;
 	});
 </script>
 
@@ -310,6 +373,7 @@
 							onclick={() => {
 								activeCategory = childType;
 								selectedChildFullName = undefined;
+								openFieldActionMenuRowId = null;
 							}}
 						>
 							<span class="tab-label">{getCategoryLabel(childType)}</span>
@@ -426,23 +490,73 @@
 									<input
 										type="checkbox"
 										title="Select/Deselect all in category"
-										checked={activeChildren.length > 0 && activeChildren.every((c) => isStaged(c))}
-										indeterminate={activeChildren.some((c) => isStaged(c)) &&
-											!activeChildren.every((c) => isStaged(c))}
+										checked={stageableChildren.length > 0 &&
+											stageableChildren.every((c) => isStaged(c))}
+										indeterminate={stageableChildren.some((c) => isStaged(c)) &&
+											!stageableChildren.every((c) => isStaged(c))}
+										disabled={stageableChildren.length === 0}
 										onchange={() =>
 											onToggleAllStagedChildren(
-												activeChildren.map(childItemToComponentSummary),
+												stageableChildren.map(childItemToComponentSummary),
 												activeCategory,
 											)}
 									/>
 								</span>
-								<span>Name</span>
-								<span>Label</span>
-								<span>Modified By</span>
-								<span>Modified Date</span>
+								<span
+									><button
+										class="sort-btn"
+										class:sorted={childSortKey === "childApiName"}
+										onclick={() => toggleChildSort("childApiName")}
+										>Name<span class="sort-arrow" aria-hidden="true"
+											>{childSortKey === "childApiName"
+												? childSortDir === "asc"
+													? "▴"
+													: "▾"
+												: "⇅"}</span
+										></button
+									></span
+								>
+								<span
+									><button
+										class="sort-btn"
+										class:sorted={childSortKey === "label"}
+										onclick={() => toggleChildSort("label")}
+										>Label<span class="sort-arrow" aria-hidden="true"
+											>{childSortKey === "label" ? (childSortDir === "asc" ? "▴" : "▾") : "⇅"}</span
+										></button
+									></span
+								>
+								<span
+									><button
+										class="sort-btn"
+										class:sorted={childSortKey === "lastModifiedByName"}
+										onclick={() => toggleChildSort("lastModifiedByName")}
+										>Modified By<span class="sort-arrow" aria-hidden="true"
+											>{childSortKey === "lastModifiedByName"
+												? childSortDir === "asc"
+													? "▴"
+													: "▾"
+												: "⇅"}</span
+										></button
+									></span
+								>
+								<span
+									><button
+										class="sort-btn"
+										class:sorted={childSortKey === "lastModifiedDate"}
+										onclick={() => toggleChildSort("lastModifiedDate")}
+										>Modified Date<span class="sort-arrow" aria-hidden="true"
+											>{childSortKey === "lastModifiedDate"
+												? childSortDir === "asc"
+													? "▴"
+													: "▾"
+												: "⇅"}</span
+										></button
+									></span
+								>
 								<span>Actions</span>
 							</div>
-							{#each activeChildren as child (child.fullName)}
+							{#each sortedActiveChildren as child (child.fullName)}
 								<div
 									class="child-row"
 									class:active-row={child.fullName === selectedChildFullName}
@@ -451,8 +565,11 @@
 									<span>
 										<input
 											type="checkbox"
-											title="Stage for metadata cart"
+											title={canStageChild(child)
+												? "Stage for metadata cart"
+												: "Standard fields cannot be staged"}
 											checked={isStaged(child)}
+											disabled={!canStageChild(child)}
 											onchange={() => toggleStaged(child)}
 										/>
 									</span>
@@ -475,10 +592,46 @@
 									<span title={child.lastModifiedDate ?? ""}
 										>{formatDate(child.lastModifiedDate)}</span
 									>
-									<span>
-										<button class="inline-action" type="button" onclick={() => toggleStaged(child)}>
-											{isStaged(child) ? "Unstage" : "Stage"}
-										</button>
+									<span class="row-actions-cell">
+										{#if isCustomFieldCategory}
+											<details
+												class="action-menu"
+												open={openFieldActionMenuRowId === child.fullName}
+											>
+												<summary
+													aria-label={`Actions for ${child.fullName}`}
+													onclick={() => toggleFieldActionMenu(child.fullName)}
+												>
+													Actions
+												</summary>
+												<div class="action-menu-items">
+													<button
+														type="button"
+														disabled={!canStageChild(child)}
+														title={canStageChild(child)
+															? "Stage this field in the metadata cart"
+															: "Standard fields cannot be staged"}
+														onclick={() => {
+															openFieldActionMenuRowId = null;
+															toggleStaged(child);
+														}}
+													>
+														{isStaged(child) ? "Unstage from cart" : "Stage in cart"}
+													</button>
+													<button type="button" onclick={() => openFieldAccessModal(child)}>
+														Who Has Access?
+													</button>
+												</div>
+											</details>
+										{:else}
+											<button
+												class="inline-action"
+												type="button"
+												onclick={() => toggleStaged(child)}
+											>
+												{isStaged(child) ? "Unstage" : "Stage"}
+											</button>
+										{/if}
 									</span>
 								</div>
 							{/each}
@@ -503,6 +656,17 @@
 		{/if}
 	</div>
 </div>
+
+{#if selectedFieldForAccess}
+	<FieldAccessModal
+		{activeOrg}
+		sobjectType={selectedFieldForAccess.sobjectType}
+		fieldFullName={selectedFieldForAccess.fieldFullName}
+		onClose={() => {
+			selectedFieldForAccess = undefined;
+		}}
+	/>
+{/if}
 
 <style>
 	.object-explorer {
@@ -743,7 +907,7 @@
 		display: grid;
 		grid-template-columns:
 			28px minmax(140px, 1.4fr) minmax(140px, 1.2fr) minmax(110px, 0.9fr)
-			minmax(110px, 0.9fr) 80px;
+			minmax(110px, 0.9fr) 120px;
 		align-items: center;
 		gap: 10px;
 		border-top: 1px solid var(--color-border-subtle);
@@ -760,6 +924,13 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	/* Keep action menus from being clipped by the generic cell truncation rule. */
+	.child-row span.row-actions-cell {
+		overflow: visible;
+		text-overflow: unset;
+		white-space: normal;
 	}
 
 	.metadata-errors {

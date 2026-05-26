@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>MavMeta Smoke Crawl Report</title>
+		<style>
+			:root {
+				color-scheme: dark;
+			}
+			body {
+				margin: 0;
+				padding: 24px;
+				font-family: Inter, system-ui, sans-serif;
+				background: #0f1117;
+				color: #e7ebf3;
+			}
+			h1 {
+				margin: 0 0 16px;
+				font-size: 20px;
+			}
+			pre {
+				margin: 0;
+				padding: 16px;
+				border-radius: 8px;
+				background: #171b25;
+				border: 1px solid #2b3243;
+				overflow: auto;
+				font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+				font-size: 12px;
+				line-height: 1.45;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>Smoke Crawl Report</h1>
+		<script id="report-data" type="application/json">
+			{}
+		</script>
+		<pre id="report-pre"></pre>
+		<script>
+			const raw = document.getElementById("report-data")?.textContent ?? "{}";
+			const parsed = JSON.parse(raw);
+			const pretty = JSON.stringify(parsed, null, 2);
+			document.getElementById("report-pre").textContent = pretty;
+		</script>
+	</body>
+</html>

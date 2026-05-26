@@ -5,6 +5,7 @@ import {
 	childItemToComponentSummary,
 	formatChildLabel,
 	getCategoryLabel,
+	isStageableCustomFieldChild,
 	getObjectBadge,
 	getObjectTypeLabel,
 	matchesObjectSearch,
@@ -211,6 +212,62 @@ describe("object explorer view model", () => {
 				"Feature_Flag__mdt.Is_Enabled__c",
 			);
 			expect(childItemToComponentSummary(cmdtFieldItem).parentName).toBe("Feature_Flag__mdt");
+		});
+	});
+
+	describe("isStageableCustomFieldChild", () => {
+		it("treats __c and namespaced custom fields as stageable", () => {
+			expect(
+				isStageableCustomFieldChild({
+					fullName: "Account.Legacy_Code__c",
+					childApiName: "Legacy_Code__c",
+					parentObject: "Account",
+					metadataType: "CustomField",
+				}),
+			).toBe(true);
+
+			expect(
+				isStageableCustomFieldChild({
+					fullName: "Account.ns__Region__c",
+					childApiName: "ns__Region__c",
+					parentObject: "Account",
+					metadataType: "CustomField",
+				}),
+			).toBe(true);
+		});
+
+		it("treats person-account __pc fields as stageable", () => {
+			expect(
+				isStageableCustomFieldChild({
+					fullName: "Account.PersonMobilePhone__pc",
+					childApiName: "PersonMobilePhone__pc",
+					parentObject: "Account",
+					metadataType: "CustomField",
+				}),
+			).toBe(true);
+		});
+
+		it("treats standard fields as stageable", () => {
+			expect(
+				isStageableCustomFieldChild({
+					fullName: "Account.Industry",
+					childApiName: "Industry",
+					parentObject: "Account",
+					metadataType: "CustomField",
+				}),
+			).toBe(true);
+		});
+
+		it("stays stageable even when raw.custom is false", () => {
+			expect(
+				isStageableCustomFieldChild({
+					fullName: "Account.Industry",
+					childApiName: "Industry",
+					parentObject: "Account",
+					metadataType: "CustomField",
+					raw: { custom: false },
+				}),
+			).toBe(true);
 		});
 	});
 });

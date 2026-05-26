@@ -57,6 +57,7 @@ vi.mock("./backend/backend-client", () => ({
 		soqlRun: vi.fn(),
 		listObjects: vi.fn(),
 		listObjectChildren: vi.fn(),
+		listFieldAccess: vi.fn(),
 		listLwcBundles: vi.fn(),
 		getLwcBundle: vi.fn(),
 		deployLwcBundle: vi.fn(),
@@ -120,6 +121,17 @@ describe("App Smoke Tests", () => {
 			objectApiName: "Account",
 			children: {},
 			errors: [],
+		});
+		mockedBackendClient.listFieldAccess.mockResolvedValue({
+			rows: [],
+			stats: {
+				totalActiveUsersWithAccess: 0,
+				profileGrants: 0,
+				permissionSetGrants: 0,
+				permissionSetGroupGrants: 0,
+				mutedUsers: 0,
+			},
+			warnings: [],
 		});
 		mockedBackendClient.listLwcBundles.mockResolvedValue({
 			bundles: [],

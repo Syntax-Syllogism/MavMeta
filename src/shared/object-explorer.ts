@@ -58,7 +58,6 @@ export const OBJECT_CHILD_METADATA_TYPES = [
 	"WebLink",
 	"BusinessProcess",
 	"SharingReason",
-	"SharingRecalculation",
 ] as const;
 
 export type ObjectChildMetadataType = (typeof OBJECT_CHILD_METADATA_TYPES)[number];
@@ -73,5 +72,4 @@ export const CHILD_CATEGORY_LABELS: Record<string, string> = {
 	WebLink: "Buttons, Links & Actions",
 	BusinessProcess: "Business Processes",
 	SharingReason: "Sharing Reasons",
-	SharingRecalculation: "Sharing Recalculations",
 };

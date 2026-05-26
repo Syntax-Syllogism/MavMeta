@@ -10,6 +10,7 @@ import { ApiError } from "./api-error";
 import { LwcService, type LwcServiceApi } from "./lwc-service";
 import { MetadataService, type MetadataServiceApi } from "./metadata-service";
 import { ObjectExplorerService, type ObjectExplorerServiceApi } from "./object-explorer-service";
+import { FieldAccessService, type FieldAccessServiceApi } from "./field-access-service";
 import { OrgService, type OrgServiceApi } from "./org-service";
 import { RestService, type RestServiceApi } from "./rest-service";
 import { SoqlService, type SoqlServiceApi } from "./soql-service";
@@ -29,6 +30,7 @@ import type {
 	StartBulkQueryRequest,
 	ValidateQueryRequest,
 } from "../shared/soql";
+import type { FieldAccessRequest } from "../shared/field-access";
 
 type ErrorPayload = {
 	code: string;
@@ -39,6 +41,7 @@ type CreateAppOptions = {
 	orgService?: OrgServiceApi;
 	metadataService?: MetadataServiceApi;
 	objectExplorerService?: ObjectExplorerServiceApi;
+	fieldAccessService?: FieldAccessServiceApi;
 	deployService?: DeployServiceApi;
 	restService?: RestServiceApi;
 	soqlService?: SoqlServiceApi;
@@ -70,6 +73,7 @@ export function createApp(options: CreateAppOptions = {}) {
 	const orgService = options.orgService ?? new OrgService();
 	const metadataService = options.metadataService ?? new MetadataService();
 	const objectExplorerService = options.objectExplorerService ?? new ObjectExplorerService();
+	const fieldAccessService = options.fieldAccessService ?? new FieldAccessService();
 	const deployService = options.deployService ?? new DeployService();
 	const restService = options.restService ?? new RestService();
 	const soqlService = options.soqlService ?? new SoqlService();
@@ -241,6 +245,9 @@ export function createApp(options: CreateAppOptions = {}) {
 	);
 	app.post("/api/objects/children", async (request) =>
 		objectExplorerService.listObjectChildren(readListObjectChildrenRequest(request.body)),
+	);
+	app.post("/api/fields/access", async (request) =>
+		fieldAccessService.resolve(readFieldAccessRequest(request.body)),
 	);
 
 	app.post("/api/deploy/start", async (request) =>
@@ -851,6 +858,18 @@ function readListObjectChildrenRequest(body: unknown): {
 			username: readStringField(targetBody, "username", { required: true }) as string,
 		},
 		objectApiName: readStringField(objectBody, "objectApiName", { required: true }) as string,
+	};
+}
+
+function readFieldAccessRequest(body: unknown): FieldAccessRequest {
+	const objectBody = readObjectBody(body);
+	const targetBody = readObjectBody(objectBody.target);
+	return {
+		target: {
+			username: readStringField(targetBody, "username", { required: true }) as string,
+		},
+		sobjectType: readStringField(objectBody, "sobjectType", { required: true }) as string,
+		fieldFullName: readStringField(objectBody, "fieldFullName", { required: true }) as string,
 	};
 }
 

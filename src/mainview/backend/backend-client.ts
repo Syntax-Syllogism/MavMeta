@@ -22,6 +22,7 @@ import type {
 	ListObjectChildrenRequest,
 	ListObjectChildrenResponse,
 } from "../../shared/object-explorer";
+import type { FieldAccessRequest, FieldAccessResponse } from "../../shared/field-access";
 import type {
 	CancelCrossOrgDeployRequest,
 	CancelCrossOrgDeployResponse,
@@ -79,10 +80,12 @@ async function requestJson<TResponse>(
 	method: HttpMethod,
 	path: string,
 	body?: unknown,
+	options: { signal?: AbortSignal } = {},
 ): Promise<TResponse> {
 	const token = await readSessionTokenOrFetch();
 	const response = await fetch(path, {
 		method,
+		signal: options.signal,
 		headers: {
 			...JSON_HEADERS,
 			"x-mavmeta-session": token,
@@ -236,6 +239,8 @@ export const backendClient = {
 		requestJson<ListObjectsResponse>("POST", "/api/objects/list", request),
 	listObjectChildren: (request: ListObjectChildrenRequest) =>
 		requestJson<ListObjectChildrenResponse>("POST", "/api/objects/children", request),
+	listFieldAccess: (request: FieldAccessRequest, options: { signal?: AbortSignal } = {}) =>
+		requestJson<FieldAccessResponse>("POST", "/api/fields/access", request, options),
 	listLwcBundles: (request: ListLwcBundlesRequest) =>
 		requestJson<ListLwcBundlesResponse>("POST", "/api/lwc/bundles/list", request),
 	getLwcBundle: (request: GetLwcBundleRequest) =>

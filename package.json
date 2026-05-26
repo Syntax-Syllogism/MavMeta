@@ -1,6 +1,6 @@
 {
 	"name": "@syntax-syllogism/mavmeta",
-	"version": "0.2.2",
+	"version": "0.3.0",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
@@ -38,6 +38,7 @@
 		"verify:no-inline-scripts": "node scripts/verify-no-inline-scripts.mjs",
 		"verify:no-unapproved-https": "node scripts/verify-no-unapproved-https.mjs",
 		"screenshots:capture": "node scripts/capture-screenshots.mjs",
+		"smoke": "node scripts/smoke-crawl.mjs",
 		"test": "vitest run",
 		"typecheck": "tsc --noEmit",
 		"lint": "eslint .",

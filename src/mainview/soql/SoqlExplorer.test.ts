@@ -313,4 +313,38 @@ describe("SoqlExplorer", () => {
 		});
 		expect(screen.queryByLabelText("Filter field 1")).toBeNull();
 	});
+
+	it("shows copy success message when clipboard write succeeds", async () => {
+		const writeText = vi.fn().mockResolvedValue(undefined);
+		const originalAnimate = Element.prototype.animate;
+		Object.defineProperty(Element.prototype, "animate", {
+			value: vi.fn(() => ({
+				cancel: vi.fn(),
+				finished: Promise.resolve(),
+				play: vi.fn(),
+			})),
+			configurable: true,
+		});
+		Object.defineProperty(navigator, "clipboard", {
+			value: { writeText },
+			configurable: true,
+		});
+
+		try {
+			render(SoqlExplorer, { activeOrg: sandboxOrg });
+			await waitFor(() => expect(mockedClient.soqlDescribeGlobal).toHaveBeenCalled());
+			await selectSObject("Account");
+			await waitFor(() => expect(mockedClient.soqlDescribeObject).toHaveBeenCalled());
+
+			await fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+
+			await waitFor(() => expect(writeText).toHaveBeenCalled());
+			expect(screen.getByText("Query copied.")).toBeTruthy();
+		} finally {
+			Object.defineProperty(Element.prototype, "animate", {
+				value: originalAnimate,
+				configurable: true,
+			});
+		}
+	});
 });

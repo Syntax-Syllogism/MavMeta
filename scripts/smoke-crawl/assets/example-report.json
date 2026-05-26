@@ -1,0 +1,45 @@
+{
+	"run": {
+		"orgAlias": "dev-hub",
+		"orgUsername": "dev-hub@example.com",
+		"status": "complete",
+		"startedAt": "2026-05-26T03:20:00.000Z",
+		"finishedAt": "2026-05-26T03:23:15.000Z",
+		"config": {
+			"depth": 2,
+			"delayMs": 500,
+			"areas": [
+				"metadata-explorer",
+				"object-explorer",
+				"lwc-editor",
+				"rest-explorer",
+				"soql-explorer"
+			]
+		},
+		"counts": {
+			"typesVisited": 12,
+			"coverageGaps": 1,
+			"errors": 1
+		}
+	},
+	"coverageGaps": [
+		{
+			"kind": "zero-result",
+			"area": "metadata-explorer",
+			"metadataType": "Workflow",
+			"screenshot": "screenshots/zero-workflow.png",
+			"observedAt": "2026-05-26T03:21:10.000Z"
+		}
+	],
+	"errors": [
+		{
+			"area": "rest-explorer",
+			"metadataType": "",
+			"componentName": null,
+			"signal": "network",
+			"message": "Request timed out after 10s",
+			"screenshot": "screenshots/error-rest-network.png",
+			"observedAt": "2026-05-26T03:22:40.000Z"
+		}
+	]
+}

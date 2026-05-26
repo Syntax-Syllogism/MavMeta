@@ -12,6 +12,7 @@ import type { OrgServiceApi } from "./org-service";
 import type { RestServiceApi } from "./rest-service";
 import type { SoqlServiceApi } from "./soql-service";
 import type { ScratchOrgServiceApi } from "./scratch-org-service";
+import type { FieldAccessServiceApi } from "./field-access-service";
 
 function createOrgServiceMock(): OrgServiceApi {
 	return {
@@ -144,6 +145,22 @@ function createScratchOrgServiceMock(): ScratchOrgServiceApi {
 		listSnapshots: vi.fn().mockResolvedValue({
 			eligibility: "enabled",
 			snapshots: [],
+		}),
+	};
+}
+
+function createFieldAccessServiceMock(): FieldAccessServiceApi {
+	return {
+		resolve: vi.fn().mockResolvedValue({
+			rows: [],
+			stats: {
+				totalActiveUsersWithAccess: 0,
+				profileGrants: 0,
+				permissionSetGrants: 0,
+				permissionSetGroupGrants: 0,
+				mutedUsers: 0,
+			},
+			warnings: [],
 		}),
 	};
 }
@@ -342,6 +359,36 @@ describe("createApp", () => {
 			metadataType: "ApexClass",
 			search: "controller",
 			folder: undefined,
+		});
+	});
+
+	it("routes field access requests to field-access service", async () => {
+		const fieldAccessService = createFieldAccessServiceMock();
+		const app = createTestApp({
+			orgService: createOrgServiceMock(),
+			metadataService: createMetadataServiceMock(),
+			deployService: createDeployServiceMock(),
+			fieldAccessService,
+		});
+		apps.push(app);
+
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/fields/access",
+				payload: {
+					target: { username: "user@example.com" },
+					sobjectType: "Account",
+					fieldFullName: "Account.Legacy_Code__c",
+				},
+			}),
+		);
+
+		expect(response.statusCode).toBe(200);
+		expect(fieldAccessService.resolve).toHaveBeenCalledWith({
+			target: { username: "user@example.com" },
+			sobjectType: "Account",
+			fieldFullName: "Account.Legacy_Code__c",
 		});
 	});
 

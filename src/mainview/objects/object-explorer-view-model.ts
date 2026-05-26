@@ -66,3 +66,7 @@ export function getObjectBadge(obj: ObjectSummary): string {
 	if (obj.namespacePrefix) return obj.namespacePrefix;
 	return OBJECT_TYPE_LABELS[obj.objectType];
 }
+
+export function isStageableCustomFieldChild(item: ChildMetadataItem): boolean {
+	return item.metadataType === "CustomField";
+}

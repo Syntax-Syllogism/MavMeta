@@ -96,6 +96,43 @@
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	});
+
+	let mdtSortKey = $state<string | null>(null);
+	let mdtSortDir = $state<"asc" | "desc">("asc");
+
+	function toggleMdtSort(key: string) {
+		if (mdtSortKey === key) {
+			mdtSortDir = mdtSortDir === "asc" ? "desc" : "asc";
+		} else {
+			mdtSortKey = key;
+			mdtSortDir = "asc";
+		}
+	}
+
+	const sortedFilteredComponents = $derived.by(() => {
+		if (!mdtSortKey) return filteredMetadataComponents;
+		const k = mdtSortKey as keyof MetadataComponentSummary;
+		return [...filteredMetadataComponents].sort((a, b) => {
+			const av = String(a[k] ?? "");
+			const bv = String(b[k] ?? "");
+			const cmp = av.localeCompare(bv, undefined, { sensitivity: "base" });
+			return mdtSortDir === "asc" ? cmp : -cmp;
+		});
+	});
+
+	const sortedMdtGroups = $derived.by(() => {
+		if (!mdtSortKey) return metadataComponentGroups;
+		const k = mdtSortKey as keyof MetadataComponentSummary;
+		return metadataComponentGroups.map((group) => ({
+			...group,
+			components: [...group.components].sort((a, b) => {
+				const av = String(a[k] ?? "");
+				const bv = String(b[k] ?? "");
+				const cmp = av.localeCompare(bv, undefined, { sensitivity: "base" });
+				return mdtSortDir === "asc" ? cmp : -cmp;
+			}),
+		}));
+	});
 </script>
 
 <div class="metadata-explorer">
@@ -331,7 +368,7 @@
 
 				{#if shouldGroupMetadataComponents}
 					<div class="component-tree" role="tree" aria-label="Metadata components">
-						{#each metadataComponentGroups as group (group.name)}
+						{#each sortedMdtGroups as group (group.name)}
 							<section class="component-group">
 								<button
 									class="group-toggle"
@@ -358,9 +395,46 @@
 														onToggleAllStagedItems(group.components, group.components[0]?.type)}
 												/>
 											</span>
-											<span>Component</span><span>Modified By</span><span>Modified Date</span><span
-												>Actions</span
-											>
+											<span
+												><button
+													class="sort-btn"
+													class:sorted={mdtSortKey === "fullName"}
+													onclick={() => toggleMdtSort("fullName")}
+													>Component<span class="sort-arrow" aria-hidden="true"
+														>{mdtSortKey === "fullName"
+															? mdtSortDir === "asc"
+																? "▴"
+																: "▾"
+															: "⇅"}</span
+													></button
+												></span
+											><span
+												><button
+													class="sort-btn"
+													class:sorted={mdtSortKey === "lastModifiedByName"}
+													onclick={() => toggleMdtSort("lastModifiedByName")}
+													>Modified By<span class="sort-arrow" aria-hidden="true"
+														>{mdtSortKey === "lastModifiedByName"
+															? mdtSortDir === "asc"
+																? "▴"
+																: "▾"
+															: "⇅"}</span
+													></button
+												></span
+											><span
+												><button
+													class="sort-btn"
+													class:sorted={mdtSortKey === "lastModifiedDate"}
+													onclick={() => toggleMdtSort("lastModifiedDate")}
+													>Modified Date<span class="sort-arrow" aria-hidden="true"
+														>{mdtSortKey === "lastModifiedDate"
+															? mdtSortDir === "asc"
+																? "▴"
+																: "▾"
+															: "⇅"}</span
+													></button
+												></span
+											><span>Actions</span>
 										</div>
 										{#each group.components as component (component.fullName)}
 											<div
@@ -428,11 +502,44 @@
 											)}
 									/>
 								</span>
-								<span>Component</span><span>Modified By</span><span>Modified Date</span><span
-									>Actions</span
-								>
+								<span
+									><button
+										class="sort-btn"
+										class:sorted={mdtSortKey === "fullName"}
+										onclick={() => toggleMdtSort("fullName")}
+										>Component<span class="sort-arrow" aria-hidden="true"
+											>{mdtSortKey === "fullName" ? (mdtSortDir === "asc" ? "▴" : "▾") : "⇅"}</span
+										></button
+									></span
+								><span
+									><button
+										class="sort-btn"
+										class:sorted={mdtSortKey === "lastModifiedByName"}
+										onclick={() => toggleMdtSort("lastModifiedByName")}
+										>Modified By<span class="sort-arrow" aria-hidden="true"
+											>{mdtSortKey === "lastModifiedByName"
+												? mdtSortDir === "asc"
+													? "▴"
+													: "▾"
+												: "⇅"}</span
+										></button
+									></span
+								><span
+									><button
+										class="sort-btn"
+										class:sorted={mdtSortKey === "lastModifiedDate"}
+										onclick={() => toggleMdtSort("lastModifiedDate")}
+										>Modified Date<span class="sort-arrow" aria-hidden="true"
+											>{mdtSortKey === "lastModifiedDate"
+												? mdtSortDir === "asc"
+													? "▴"
+													: "▾"
+												: "⇅"}</span
+										></button
+									></span
+								><span>Actions</span>
 							</div>
-							{#each filteredMetadataComponents as component (component.fullName)}
+							{#each sortedFilteredComponents as component (component.fullName)}
 								<div
 									class="component-row"
 									class:active-row={component.fullName === selectedMetadataComponentFullName}

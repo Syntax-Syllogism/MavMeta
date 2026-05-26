@@ -41,6 +41,29 @@
 
 	let openMenuRowId = $state<string | null>(null);
 
+	let sortKey = $state<string | null>(null);
+	let sortDir = $state<"asc" | "desc">("asc");
+
+	function toggleSort(key: string) {
+		if (sortKey === key) {
+			sortDir = sortDir === "asc" ? "desc" : "asc";
+		} else {
+			sortKey = key;
+			sortDir = "asc";
+		}
+	}
+
+	const sortedOrgs = $derived.by(() => {
+		if (!sortKey) return orgs;
+		const k = sortKey as keyof OrgSummary;
+		return [...orgs].sort((a, b) => {
+			const av = String(a[k] ?? "");
+			const bv = String(b[k] ?? "");
+			const cmp = av.localeCompare(bv, undefined, { sensitivity: "base" });
+			return sortDir === "asc" ? cmp : -cmp;
+		});
+	});
+
 	function toggleActionMenu(rowId: string, menuElement: HTMLDetailsElement, event: MouseEvent) {
 		event.preventDefault();
 		const shouldOpen = openMenuRowId !== rowId;
@@ -118,14 +141,59 @@
 	{#if orgs.length}
 		<div class="org-table" role="table" aria-label="Authenticated orgs">
 			<div class="org-row table-heading" role="row">
-				<span>Alias</span>
-				<span>Username</span>
-				<span>Environment</span>
-				<span>Trial Expiration</span>
-				<span>Status</span>
+				<span
+					><button
+						class="sort-btn"
+						class:sorted={sortKey === "alias"}
+						onclick={() => toggleSort("alias")}
+						>Alias<span class="sort-arrow" aria-hidden="true"
+							>{sortKey === "alias" ? (sortDir === "asc" ? "▴" : "▾") : "⇅"}</span
+						></button
+					></span
+				>
+				<span
+					><button
+						class="sort-btn"
+						class:sorted={sortKey === "username"}
+						onclick={() => toggleSort("username")}
+						>Username<span class="sort-arrow" aria-hidden="true"
+							>{sortKey === "username" ? (sortDir === "asc" ? "▴" : "▾") : "⇅"}</span
+						></button
+					></span
+				>
+				<span
+					><button
+						class="sort-btn"
+						class:sorted={sortKey === "environment"}
+						onclick={() => toggleSort("environment")}
+						>Environment<span class="sort-arrow" aria-hidden="true"
+							>{sortKey === "environment" ? (sortDir === "asc" ? "▴" : "▾") : "⇅"}</span
+						></button
+					></span
+				>
+				<span
+					><button
+						class="sort-btn"
+						class:sorted={sortKey === "trialExpirationDate"}
+						onclick={() => toggleSort("trialExpirationDate")}
+						>Trial Expiration<span class="sort-arrow" aria-hidden="true"
+							>{sortKey === "trialExpirationDate" ? (sortDir === "asc" ? "▴" : "▾") : "⇅"}</span
+						></button
+					></span
+				>
+				<span
+					><button
+						class="sort-btn"
+						class:sorted={sortKey === "authStatus"}
+						onclick={() => toggleSort("authStatus")}
+						>Status<span class="sort-arrow" aria-hidden="true"
+							>{sortKey === "authStatus" ? (sortDir === "asc" ? "▴" : "▾") : "⇅"}</span
+						></button
+					></span
+				>
 				<span></span>
 			</div>
-			{#each orgs as org (org.username)}
+			{#each sortedOrgs as org (org.username)}
 				<div class:active-row={org.username === activeOrg?.username} class="org-row" role="row">
 					<span>
 						<button

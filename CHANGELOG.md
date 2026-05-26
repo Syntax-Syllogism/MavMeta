@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0/).
 
+## [0.3.0] - 2026-05-25
+
+### Added
+
+- Improved validation messaging in SOQL Explorer with auto-dismiss
+- Sortable column headers across all explorers
+- Multi-area crawler workflows and documentation
+- Collapsible sections in SOQL Explorer for improved organization
+- Enhanced field access audit with improved error handling and empty state displays
+- SOQL Explorer filter bar positioned above editor, 25-row preview, parent field flattening, and export notifications
+- Field access audit modal and backend functionality
+
+### Changed
+
+- Enhanced sortable column styling and configuration
+- Improved SOQL Explorer collapsible section styling
+- Refactored custom field detection logic for field access auditing
+
+### Fixed
+
+- Corrected smoke crawler asset placement
+- Restored object explorer type checking
+
 ## [0.2.2] - 2026-05-24
 
 ### Added

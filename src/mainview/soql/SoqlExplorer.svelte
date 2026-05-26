@@ -3,6 +3,7 @@
 	import { EditorView, basicSetup } from "codemirror";
 	import { EditorState } from "@codemirror/state";
 	import { sql } from "@codemirror/lang-sql";
+	import { autocompletion } from "@codemirror/autocomplete";
 	import { oneDark } from "@codemirror/theme-one-dark";
 	import { backendClient } from "../backend/backend-client";
 	import type { OrgSummary } from "../../shared/org";
@@ -10,6 +11,8 @@
 	import { buildSoql, type SoqlBuilderState, type SoqlFilter } from "./soql-builder";
 	import { parseCsv, toCsv } from "./soql-csv";
 	import { parseSoqlError } from "./soql-error";
+	import { extractSelectedPaths, getPathValue } from "./soql-columns";
+	import Toast from "../common/Toast.svelte";
 
 	let { activeOrg }: { activeOrg: OrgSummary | undefined } = $props();
 
@@ -26,6 +29,10 @@
 	let isExporting = $state(false);
 	let isUnmounted = false;
 	let tooLargeInteractive = $state(false);
+	let toastMessage = $state("");
+	let toastVisible = $state(false);
+	let toastVariant = $state<"info" | "success" | "error">("success");
+	let validDismissed = $state(false);
 	let lastCheckedSoql = $state("");
 	let lastOrg = $state(untrack(() => activeOrg?.username));
 	let fieldSearch = $state("");
@@ -34,10 +41,14 @@
 	let editorHost: HTMLDivElement | undefined = $state();
 	let editorView: EditorView | undefined;
 	let editorMode = $state<"builder" | "raw">("builder");
+	let editorCollapsed = $state(false);
+	let filtersCollapsed = $state(false);
+	let sortCollapsed = $state(false);
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	let requestVersion = 0;
 	const MAX_INTERACTIVE_ROWS = 10000;
 	const TOOLING_DEFAULT_LIMIT = 2000;
+	const PREVIEW_ROW_LIMIT = 25;
 
 	let builder = $state<SoqlBuilderState>({
 		sobject: "",
@@ -49,8 +60,11 @@
 	const effectiveSoql = $derived(mode === "raw" ? rawSoql : buildSoql(builder));
 	const isProduction = $derived(activeOrg?.environment === "production");
 	const displayedRows = $derived(fullRows.length ? fullRows : previewRows);
+	const selectedPaths = $derived(extractSelectedPaths(effectiveSoql));
 	const effectiveColumns = $derived(
-		Array.from(new Set(displayedRows.flatMap((row) => Object.keys(row)))),
+		selectedPaths.length > 0 && !isAggregateQuery(effectiveSoql)
+			? selectedPaths
+			: Array.from(new Set(displayedRows.flatMap((row) => Object.keys(row)))),
 	);
 	const filteredFields = $derived(
 		fields.filter((field) => {
@@ -79,6 +93,12 @@
 	const parsedValidation = $derived(
 		validation && validation !== "Valid" ? parseSoqlError(validation) : undefined,
 	);
+
+	$effect(() => {
+		if (validation && validation !== "Valid") {
+			validDismissed = false;
+		}
+	});
 
 	$effect(() => {
 		if (!activeOrg) return;
@@ -138,6 +158,13 @@
 		}
 	});
 
+	$effect(() => {
+		if (editorCollapsed) return;
+		const view = editorView;
+		if (!view) return;
+		requestAnimationFrame(() => view.requestMeasure());
+	});
+
 	onDestroy(() => {
 		isUnmounted = true;
 		clearTimeout(timer);
@@ -184,7 +211,12 @@
 				return;
 			}
 
-			const run = await backendClient.soqlRun({ username, api, soql, previewLimit: 5 });
+			const run = await backendClient.soqlRun({
+				username,
+				api,
+				soql,
+				previewLimit: PREVIEW_ROW_LIMIT,
+			});
 			if (localVersion !== requestVersion) return;
 			previewRows = run.records;
 		} catch (error) {
@@ -425,7 +457,7 @@
 				username: activeOrg.username,
 				api,
 				soql,
-				previewLimit: 5,
+				previewLimit: PREVIEW_ROW_LIMIT,
 			});
 			previewRows = run.records;
 			validation = "Valid";
@@ -523,7 +555,7 @@
 				const csv = await waitForBulkCsv(activeOrg.username, started.jobId);
 				if (format === "csv") {
 					triggerDownload(csv, `${toFileStem(activeOrg.username)}.csv`, "text/csv;charset=utf-8");
-					actionMessage = "Bulk CSV export ready.";
+					showToast("Bulk CSV export ready.");
 				} else {
 					const records = parseCsv(csv, { parseScalars: true });
 					triggerDownload(
@@ -531,8 +563,9 @@
 						`${toFileStem(activeOrg.username)}.json`,
 						"application/json;charset=utf-8",
 					);
-					actionMessage = "Bulk JSON export ready.";
+					showToast("Bulk JSON export ready.");
 				}
+				actionMessage = undefined;
 				return;
 			}
 
@@ -572,7 +605,8 @@
 				);
 			}
 			if (!(api === "tooling" && !first.done)) {
-				actionMessage = `${format.toUpperCase()} export ready.`;
+				actionMessage = undefined;
+				showToast(`${format.toUpperCase()} export ready.`);
 			}
 		} catch (error) {
 			actionMessage = error instanceof Error ? error.message : "Export failed.";
@@ -700,6 +734,12 @@
 		return operator === "= null" || operator === "!= null";
 	}
 
+	function showToast(msg: string, v: "info" | "success" | "error" = "success") {
+		toastMessage = msg;
+		toastVariant = v;
+		toastVisible = true;
+	}
+
 	function triggerDownload(content: string, fileName: string, contentType: string) {
 		const blob = new Blob([content], { type: contentType });
 		const url = URL.createObjectURL(blob);
@@ -721,6 +761,7 @@
 					basicSetup,
 					oneDark,
 					sql(),
+					autocompletion({ override: [] }),
 					EditorState.readOnly.of(!editable),
 					EditorView.updateListener.of((update) => {
 						if (!update.docChanged || mode !== "raw") return;
@@ -736,9 +777,9 @@
 		const value = editorView?.state.doc.toString() ?? editorText;
 		try {
 			await navigator.clipboard.writeText(value);
-			actionMessage = "Query copied.";
+			showToast("Query copied.");
 		} catch {
-			actionMessage = "Copy failed.";
+			showToast("Copy failed.", "error");
 		}
 	}
 
@@ -761,16 +802,19 @@
 </script>
 
 <div class="panel soql-explorer">
-	<div class="soql-toolbar-title">
-		<p class="eyebrow">SOQL Explorer</p>
-		<h2>SOQL</h2>
-	</div>
-
 	{#if !activeOrg}
+		<div class="soql-toolbar-title">
+			<p class="eyebrow">SOQL Explorer</p>
+			<h2>SOQL</h2>
+		</div>
 		<div class="empty-state"><p>Select an active org to query.</p></div>
 	{:else}
 		<div class="soql-workspace">
 			<aside class="soql-rail">
+				<div class="soql-rail__title">
+					<p class="eyebrow">SOQL Explorer</p>
+					<h2>SOQL</h2>
+				</div>
 				<div class="soql-scope">
 					<div class="soql-scope-api">
 						<p class="eyebrow">API</p>
@@ -890,164 +934,238 @@
 						{/each}
 					</div>
 				</section>
-				<section class="soql-panel soql-panel--filters">
-					<div class="soql-panel-head">
-						<p class="eyebrow">Filters</p>
-					</div>
-					<div class="soql-segment soql-segment--equal" role="group" aria-label="Filter logic">
-						<button
-							type="button"
-							aria-pressed={builder.filterLogic === "AND"}
-							disabled={mode === "raw"}
-							onclick={() => {
-								builder.filterLogic = "AND";
-							}}>AND</button
-						>
-						<button
-							type="button"
-							aria-pressed={builder.filterLogic === "OR"}
-							disabled={mode === "raw"}
-							onclick={() => {
-								builder.filterLogic = "OR";
-							}}>OR</button
-						>
-					</div>
-					<div class="soql-filters">
-						{#each builder.filters as filter, index (index)}
-							{@const selectedField = fields.find((field) => field.apiName === filter.field)}
-							{@const operators = getOperatorOptions(selectedField)}
-							<div class="soql-filter-row">
-								<select
-									aria-label={`Filter field ${index + 1}`}
-									disabled={mode === "raw"}
-									value={filter.field}
-									onchange={(event) => onFilterFieldChange(index, event.currentTarget.value)}
-								>
-									<option value="">Field</option>
-									{#each filterableFields as field (field.apiName)}
-										<option value={field.apiName}>{field.apiName}</option>
-									{/each}
-								</select>
-								<select
-									aria-label={`Filter operator ${index + 1}`}
-									disabled={mode === "raw"}
-									value={filter.operator}
-									onchange={(event) => onFilterOperatorChange(index, event.currentTarget.value)}
-								>
-									{#each operators as operator (operator)}
-										<option value={operator}>{operator}</option>
-									{/each}
-								</select>
-								{#if isValueLessOperator(filter.operator)}
-									<input aria-label={`Filter value ${index + 1}`} disabled value="null" />
-								{:else if isPicklistInFilter(filter)}
-									<select
-										aria-label={`Filter value ${index + 1}`}
-										disabled={mode === "raw"}
-										multiple
-										onchange={(event) =>
-											onFilterInValuesChange(
-												index,
-												Array.from(event.currentTarget.selectedOptions).map(
-													(option) => option.value,
-												),
-											)}
-									>
-										{#each selectedField?.picklistValues ?? [] as picklistValue (picklistValue)}
-											<option
-												value={picklistValue}
-												selected={getSelectedInValues(filter.value).includes(picklistValue)}
-												>{picklistValue}</option
-											>
-										{/each}
-									</select>
-								{:else if isPicklistFilter(filter)}
-									<select
-										aria-label={`Filter value ${index + 1}`}
-										disabled={mode === "raw"}
-										value={filter.value ?? ""}
-										onchange={(event) => onFilterValueChange(index, event.currentTarget.value)}
-									>
-										<option value="">Value</option>
-										{#each selectedField?.picklistValues ?? [] as picklistValue (picklistValue)}
-											<option value={picklistValue}>{picklistValue}</option>
-										{/each}
-									</select>
-								{:else}
-									<input
-										aria-label={`Filter value ${index + 1}`}
-										disabled={mode === "raw"}
-										value={filter.value ?? ""}
-										oninput={(event) => onFilterValueChange(index, event.currentTarget.value)}
-										placeholder="Value"
-									/>
-								{/if}
-								<button
-									type="button"
-									class="btn btn--ghost"
-									aria-label={`Remove filter ${index + 1}`}
-									disabled={mode === "raw"}
-									onclick={() => removeFilter(index)}>×</button
-								>
-							</div>
-						{/each}
-					</div>
-					<button
-						type="button"
-						class="btn btn--ghost"
-						disabled={mode === "raw" || !builder.sobject || filterableFields.length === 0}
-						onclick={addFilter}>+ Add filter</button
-					>
-					<div class="soql-order-limit">
-						<select
-							aria-label="Order by field"
-							disabled={mode === "raw"}
-							value={builder.orderBy?.field ?? ""}
-							onchange={(event) => onOrderByFieldChange(event.currentTarget.value)}
-						>
-							<option value="">No order</option>
-							{#each sortableFields as field (field.apiName)}
-								<option value={field.apiName}>{field.apiName}</option>
-							{/each}
-						</select>
-						<select
-							aria-label="Order direction"
-							disabled={mode === "raw" || !builder.orderBy?.field}
-							value={builder.orderBy?.direction ?? "ASC"}
-							onchange={(event) => {
-								if (!builder.orderBy) return;
-								builder.orderBy = {
-									...builder.orderBy,
-									direction: event.currentTarget.value as "ASC" | "DESC",
-								};
-							}}
-						>
-							<option value="ASC">ASC</option>
-							<option value="DESC">DESC</option>
-						</select>
-						<input
-							aria-label="Row limit"
-							type="number"
-							min="1"
-							step="1"
-							disabled={mode === "raw"}
-							value={builder.limit?.toString() ?? ""}
-							oninput={(event) => onLimitChange(event.currentTarget.value)}
-							placeholder="Limit"
-						/>
-					</div>
-				</section>
 			</aside>
 
 			<section class="soql-main">
-				<div class="soql-editor">
+				{#if mode !== "raw"}
+					<div class="soql-filters-bar" data-collapsed={filtersCollapsed}>
+						<div class="soql-filters-bar__section">
+							<div class="soql-filters-bar__head">
+								<button
+									type="button"
+									class="soql-section-toggle"
+									aria-expanded={!filtersCollapsed}
+									aria-controls="soql-filters-body"
+									onclick={() => {
+										filtersCollapsed = !filtersCollapsed;
+									}}
+									title={filtersCollapsed ? "Expand filters" : "Collapse filters"}
+								>
+									<span class="soql-section-toggle__chevron" aria-hidden="true">▾</span>
+									<span class="eyebrow">Filters</span>
+									{#if builder.filters.length > 0}
+										<span class="soql-section-count">{builder.filters.length}</span>
+									{/if}
+								</button>
+								<div
+									class="soql-segment soql-segment--equal"
+									role="group"
+									aria-label="Filter logic"
+								>
+									<button
+										type="button"
+										aria-pressed={builder.filterLogic === "AND"}
+										disabled={builder.filters.length < 2}
+										onclick={() => {
+											builder.filterLogic = "AND";
+										}}>AND</button
+									>
+									<button
+										type="button"
+										aria-pressed={builder.filterLogic === "OR"}
+										disabled={builder.filters.length < 2}
+										onclick={() => {
+											builder.filterLogic = "OR";
+										}}>OR</button
+									>
+								</div>
+								<button
+									type="button"
+									class="btn btn--ghost soql-add-filter"
+									disabled={!builder.sobject || filterableFields.length === 0}
+									onclick={() => {
+										addFilter();
+										filtersCollapsed = false;
+									}}>+ Add filter</button
+								>
+							</div>
+							{#if !filtersCollapsed}
+								<div class="soql-filters" id="soql-filters-body">
+									{#if builder.filters.length === 0}
+										<p class="soql-filters-empty">
+											No filters. Click <em>+ Add filter</em> to narrow results.
+										</p>
+									{/if}
+									{#each builder.filters as filter, index (index)}
+										{@const selectedField = fields.find((field) => field.apiName === filter.field)}
+										{@const operators = getOperatorOptions(selectedField)}
+										<div class="soql-filter-row">
+											<select
+												aria-label={`Filter field ${index + 1}`}
+												value={filter.field}
+												onchange={(event) => onFilterFieldChange(index, event.currentTarget.value)}
+											>
+												<option value="">Field</option>
+												{#each filterableFields as field (field.apiName)}
+													<option value={field.apiName}>{field.apiName}</option>
+												{/each}
+											</select>
+											<select
+												aria-label={`Filter operator ${index + 1}`}
+												value={filter.operator}
+												onchange={(event) =>
+													onFilterOperatorChange(index, event.currentTarget.value)}
+											>
+												{#each operators as operator (operator)}
+													<option value={operator}>{operator}</option>
+												{/each}
+											</select>
+											{#if isValueLessOperator(filter.operator)}
+												<input aria-label={`Filter value ${index + 1}`} disabled value="null" />
+											{:else if isPicklistInFilter(filter)}
+												<select
+													aria-label={`Filter value ${index + 1}`}
+													multiple
+													onchange={(event) =>
+														onFilterInValuesChange(
+															index,
+															Array.from(event.currentTarget.selectedOptions).map(
+																(option) => option.value,
+															),
+														)}
+												>
+													{#each selectedField?.picklistValues ?? [] as picklistValue (picklistValue)}
+														<option
+															value={picklistValue}
+															selected={getSelectedInValues(filter.value).includes(picklistValue)}
+															>{picklistValue}</option
+														>
+													{/each}
+												</select>
+											{:else if isPicklistFilter(filter)}
+												<select
+													aria-label={`Filter value ${index + 1}`}
+													value={filter.value ?? ""}
+													onchange={(event) =>
+														onFilterValueChange(index, event.currentTarget.value)}
+												>
+													<option value="">Value</option>
+													{#each selectedField?.picklistValues ?? [] as picklistValue (picklistValue)}
+														<option value={picklistValue}>{picklistValue}</option>
+													{/each}
+												</select>
+											{:else}
+												<input
+													aria-label={`Filter value ${index + 1}`}
+													value={filter.value ?? ""}
+													oninput={(event) => onFilterValueChange(index, event.currentTarget.value)}
+													placeholder="Value"
+												/>
+											{/if}
+											<button
+												type="button"
+												class="btn btn--ghost soql-filter-remove"
+												aria-label={`Remove filter ${index + 1}`}
+												onclick={() => removeFilter(index)}>×</button
+											>
+										</div>
+									{/each}
+								</div>
+							{/if}
+						</div>
+						<div class="soql-filters-bar__section soql-filters-bar__section--sort">
+							<div class="soql-filters-bar__head">
+								<button
+									type="button"
+									class="soql-section-toggle"
+									aria-expanded={!sortCollapsed}
+									aria-controls="soql-sort-body"
+									onclick={() => {
+										sortCollapsed = !sortCollapsed;
+									}}
+									title={sortCollapsed ? "Expand sort & limit" : "Collapse sort & limit"}
+								>
+									<span class="soql-section-toggle__chevron" aria-hidden="true">▾</span>
+									<span class="eyebrow">Sort &amp; Limit</span>
+									{#if sortCollapsed && (builder.orderBy?.field || builder.limit != null)}
+										<span class="soql-section-count soql-section-count--summary">
+											{#if builder.orderBy?.field}{builder.orderBy.field}
+												{builder.orderBy.direction}{/if}
+											{#if builder.orderBy?.field && builder.limit != null}·{/if}
+											{#if builder.limit != null}LIMIT {builder.limit}{/if}
+										</span>
+									{/if}
+								</button>
+							</div>
+							{#if !sortCollapsed}
+								<div class="soql-sort-grid" id="soql-sort-body">
+									<label class="soql-sort-field">
+										<span>Sort by</span>
+										<select
+											aria-label="Order by field"
+											value={builder.orderBy?.field ?? ""}
+											onchange={(event) => onOrderByFieldChange(event.currentTarget.value)}
+										>
+											<option value="">— none —</option>
+											{#each sortableFields as field (field.apiName)}
+												<option value={field.apiName}>{field.apiName}</option>
+											{/each}
+										</select>
+									</label>
+									<label class="soql-sort-field">
+										<span>Direction</span>
+										<select
+											aria-label="Order direction"
+											disabled={!builder.orderBy?.field}
+											value={builder.orderBy?.direction ?? "ASC"}
+											onchange={(event) => {
+												if (!builder.orderBy) return;
+												builder.orderBy = {
+													...builder.orderBy,
+													direction: event.currentTarget.value as "ASC" | "DESC",
+												};
+											}}
+										>
+											<option value="ASC">Ascending</option>
+											<option value="DESC">Descending</option>
+										</select>
+									</label>
+									<label class="soql-sort-field">
+										<span>Limit</span>
+										<input
+											aria-label="Row limit"
+											type="number"
+											min="1"
+											step="1"
+											value={builder.limit?.toString() ?? ""}
+											oninput={(event) => onLimitChange(event.currentTarget.value)}
+											placeholder="No limit"
+										/>
+									</label>
+								</div>
+							{/if}
+						</div>
+					</div>
+				{/if}
+
+				<div class="soql-editor" data-collapsed={editorCollapsed}>
 					<div class="soql-editor__bar">
-						<div class="soql-editor__title">
-							<p class="eyebrow">Query</p>
+						<button
+							type="button"
+							class="soql-section-toggle soql-editor__title"
+							aria-expanded={!editorCollapsed}
+							aria-controls="soql-editor-surface"
+							onclick={() => {
+								editorCollapsed = !editorCollapsed;
+							}}
+							title={editorCollapsed ? "Expand query" : "Collapse query"}
+						>
+							<span class="soql-section-toggle__chevron" aria-hidden="true">▾</span>
+							<span class="eyebrow">Query</span>
 							{#if mode === "raw"}
 								<span class="soql-mode-badge">RAW</span>
 							{/if}
-						</div>
+						</button>
 						<div class="soql-editor__actions">
 							<button class="btn btn--ghost" type="button" onclick={() => void copyQueryText()}
 								>Copy</button
@@ -1066,13 +1184,23 @@
 							{/if}
 						</div>
 					</div>
-					<div class="soql-editor-surface" bind:this={editorHost}></div>
+					<div class="soql-editor-surface" id="soql-editor-surface" bind:this={editorHost}></div>
 				</div>
 
 				{#if validation}
-					{#if validation === "Valid"}
-						<p class="soql-status soql-status--ok">Valid SOQL</p>
-					{:else}
+					{#if validation === "Valid" && !validDismissed}
+						<p class="soql-status soql-status--ok">
+							Valid SOQL
+							<button
+								type="button"
+								class="soql-status__dismiss"
+								aria-label="Dismiss"
+								onclick={() => {
+									validDismissed = true;
+								}}>×</button
+							>
+						</p>
+					{:else if validation !== "Valid"}
 						<div class="soql-error" role="alert">
 							{#if parsedValidation?.line || parsedValidation?.column}
 								<span class="soql-error__loc"
@@ -1154,7 +1282,7 @@
 										style={`grid-template-columns: repeat(${effectiveColumns.length}, minmax(140px, 1fr));`}
 									>
 										{#each effectiveColumns as column (column)}
-											{@const formatted = formatCellValue(row[column])}
+											{@const formatted = formatCellValue(getPathValue(row, column))}
 											<span
 												class={`soql-cell ${formatted === "null" ? "soql-cell--null" : ""}`}
 												title={formatted}>{formatted}</span
@@ -1170,3 +1298,12 @@
 		</div>
 	{/if}
 </div>
+
+<Toast
+	message={toastMessage}
+	visible={toastVisible}
+	variant={toastVariant}
+	ondismiss={() => {
+		toastVisible = false;
+	}}
+/>
