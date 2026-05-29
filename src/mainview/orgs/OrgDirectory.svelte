@@ -80,6 +80,10 @@
 		});
 	}
 
+	function formatEnvironment(env: string): string {
+		return env === "dev-hub" ? "Dev Hub" : env;
+	}
+
 	function formatTrialExpirationDate(org: OrgSummary) {
 		if (org.environment !== "scratch") {
 			return "n/a";
@@ -138,177 +142,179 @@
 		</button>
 	</form>
 
-	{#if orgs.length}
-		<div class="org-table" role="table" aria-label="Authenticated orgs">
-			<div class="org-row table-heading" role="row">
-				<span
-					><button
-						class="sort-btn"
-						class:sorted={sortKey === "alias"}
-						onclick={() => toggleSort("alias")}
-						>Alias<span class="sort-arrow" aria-hidden="true"
-							>{sortKey === "alias" ? (sortDir === "asc" ? "▴" : "▾") : "⇅"}</span
-						></button
-					></span
-				>
-				<span
-					><button
-						class="sort-btn"
-						class:sorted={sortKey === "username"}
-						onclick={() => toggleSort("username")}
-						>Username<span class="sort-arrow" aria-hidden="true"
-							>{sortKey === "username" ? (sortDir === "asc" ? "▴" : "▾") : "⇅"}</span
-						></button
-					></span
-				>
-				<span
-					><button
-						class="sort-btn"
-						class:sorted={sortKey === "environment"}
-						onclick={() => toggleSort("environment")}
-						>Environment<span class="sort-arrow" aria-hidden="true"
-							>{sortKey === "environment" ? (sortDir === "asc" ? "▴" : "▾") : "⇅"}</span
-						></button
-					></span
-				>
-				<span
-					><button
-						class="sort-btn"
-						class:sorted={sortKey === "trialExpirationDate"}
-						onclick={() => toggleSort("trialExpirationDate")}
-						>Trial Expiration<span class="sort-arrow" aria-hidden="true"
-							>{sortKey === "trialExpirationDate" ? (sortDir === "asc" ? "▴" : "▾") : "⇅"}</span
-						></button
-					></span
-				>
-				<span
-					><button
-						class="sort-btn"
-						class:sorted={sortKey === "authStatus"}
-						onclick={() => toggleSort("authStatus")}
-						>Status<span class="sort-arrow" aria-hidden="true"
-							>{sortKey === "authStatus" ? (sortDir === "asc" ? "▴" : "▾") : "⇅"}</span
-						></button
-					></span
-				>
-				<span></span>
-			</div>
-			{#each sortedOrgs as org (org.username)}
-				<div class:active-row={org.username === activeOrg?.username} class="org-row" role="row">
-					<span>
-						<button
-							class="org-link"
-							title={org.alias ?? "Not set"}
-							type="button"
-							onclick={() => onOpenOrg(org)}
-						>
-							{org.alias ?? "Not set"}
-						</button>
-					</span>
-					<span>
-						<button
-							class="org-link username-link"
-							title={org.username}
-							type="button"
-							onclick={() => onOpenOrg(org)}
-						>
-							{org.username}
-						</button>
-					</span>
-					<span>{org.environment}</span>
-					<span title={getTrialExpirationTitle(org)}>{formatTrialExpirationDate(org)}</span>
-					<span>{org.authStatus}</span>
-					<details class="action-menu" open={openMenuRowId === org.username}>
-						<summary
-							aria-label={`Actions for ${org.alias ?? org.username}`}
-							onclick={(e) => {
-								const menuElement = e.currentTarget.parentElement;
+	<div class="org-table-scroll">
+		{#if orgs.length}
+			<div class="org-table" role="table" aria-label="Authenticated orgs">
+				<div class="org-row table-heading" role="row">
+					<span
+						><button
+							class="sort-btn"
+							class:sorted={sortKey === "alias"}
+							onclick={() => toggleSort("alias")}
+							>Alias<span class="sort-arrow" aria-hidden="true"
+								>{sortKey === "alias" ? (sortDir === "asc" ? "▴" : "▾") : "⇅"}</span
+							></button
+						></span
+					>
+					<span
+						><button
+							class="sort-btn"
+							class:sorted={sortKey === "username"}
+							onclick={() => toggleSort("username")}
+							>Username<span class="sort-arrow" aria-hidden="true"
+								>{sortKey === "username" ? (sortDir === "asc" ? "▴" : "▾") : "⇅"}</span
+							></button
+						></span
+					>
+					<span
+						><button
+							class="sort-btn"
+							class:sorted={sortKey === "environment"}
+							onclick={() => toggleSort("environment")}
+							>Environment<span class="sort-arrow" aria-hidden="true"
+								>{sortKey === "environment" ? (sortDir === "asc" ? "▴" : "▾") : "⇅"}</span
+							></button
+						></span
+					>
+					<span
+						><button
+							class="sort-btn"
+							class:sorted={sortKey === "trialExpirationDate"}
+							onclick={() => toggleSort("trialExpirationDate")}
+							>Trial Expiration<span class="sort-arrow" aria-hidden="true"
+								>{sortKey === "trialExpirationDate" ? (sortDir === "asc" ? "▴" : "▾") : "⇅"}</span
+							></button
+						></span
+					>
+					<span
+						><button
+							class="sort-btn"
+							class:sorted={sortKey === "authStatus"}
+							onclick={() => toggleSort("authStatus")}
+							>Status<span class="sort-arrow" aria-hidden="true"
+								>{sortKey === "authStatus" ? (sortDir === "asc" ? "▴" : "▾") : "⇅"}</span
+							></button
+						></span
+					>
+					<span></span>
+				</div>
+				{#each sortedOrgs as org (org.username)}
+					<div class:active-row={org.username === activeOrg?.username} class="org-row" role="row">
+						<span>
+							<button
+								class="org-link"
+								title={org.alias ?? "Not set"}
+								type="button"
+								onclick={() => onOpenOrg(org)}
+							>
+								{org.alias ?? "Not set"}
+							</button>
+						</span>
+						<span>
+							<button
+								class="org-link username-link"
+								title={org.username}
+								type="button"
+								onclick={() => onOpenOrg(org)}
+							>
+								{org.username}
+							</button>
+						</span>
+						<span>{formatEnvironment(org.environment)}</span>
+						<span title={getTrialExpirationTitle(org)}>{formatTrialExpirationDate(org)}</span>
+						<span>{org.authStatus}</span>
+						<details class="action-menu" open={openMenuRowId === org.username}>
+							<summary
+								aria-label={`Actions for ${org.alias ?? org.username}`}
+								onclick={(e) => {
+									const menuElement = e.currentTarget.parentElement;
 
-								if (menuElement instanceof HTMLDetailsElement) {
-									toggleActionMenu(org.username, menuElement, e);
-								}
-							}}
-						>
-							Actions
-						</summary>
-						<div class="action-menu-items">
-							<button
-								type="button"
-								onclick={() => {
-									openMenuRowId = null;
-									onOpenOrg(org);
+									if (menuElement instanceof HTMLDetailsElement) {
+										toggleActionMenu(org.username, menuElement, e);
+									}
 								}}
 							>
-								Open Org
-							</button>
-							<button
-								type="button"
-								onclick={() => {
-									openMenuRowId = null;
-									onSetActiveOrg(org);
-								}}
-								disabled={org.username === activeOrg?.username}
-							>
-								{org.username === activeOrg?.username ? "Active Org" : "Use in MavMeta"}
-							</button>
-							<button
-								type="button"
-								onclick={() => {
-									openMenuRowId = null;
-									onRefreshOrgStatus(org);
-								}}
-							>
-								Refresh Status
-							</button>
-							<button
-								type="button"
-								onclick={() => {
-									openMenuRowId = null;
-									onReauthOrg(org);
-								}}
-							>
-								Reauthorize
-							</button>
-							<button
-								type="button"
-								onclick={() => {
-									openMenuRowId = null;
-									onStartAliasEdit(org);
-								}}
-							>
-								Set Alias
-							</button>
-							{#if org.environment === "scratch"}
+								Actions
+							</summary>
+							<div class="action-menu-items">
+								<button
+									type="button"
+									onclick={() => {
+										openMenuRowId = null;
+										onOpenOrg(org);
+									}}
+								>
+									Open Org
+								</button>
+								<button
+									type="button"
+									onclick={() => {
+										openMenuRowId = null;
+										onSetActiveOrg(org);
+									}}
+									disabled={org.username === activeOrg?.username}
+								>
+									{org.username === activeOrg?.username ? "Active Org" : "Use in MavMeta"}
+								</button>
+								<button
+									type="button"
+									onclick={() => {
+										openMenuRowId = null;
+										onRefreshOrgStatus(org);
+									}}
+								>
+									Refresh Status
+								</button>
+								<button
+									type="button"
+									onclick={() => {
+										openMenuRowId = null;
+										onReauthOrg(org);
+									}}
+								>
+									Reauthorize
+								</button>
+								<button
+									type="button"
+									onclick={() => {
+										openMenuRowId = null;
+										onStartAliasEdit(org);
+									}}
+								>
+									Set Alias
+								</button>
+								{#if org.environment === "scratch"}
+									<button
+										class="danger-action"
+										type="button"
+										onclick={() => {
+											openMenuRowId = null;
+											onStartScratchDelete(org);
+										}}
+									>
+										Delete
+									</button>
+								{/if}
 								<button
 									class="danger-action"
 									type="button"
 									onclick={() => {
 										openMenuRowId = null;
-										onStartScratchDelete(org);
+										onLogoutOrg(org);
 									}}
 								>
-									Delete
+									Logout
 								</button>
-							{/if}
-							<button
-								class="danger-action"
-								type="button"
-								onclick={() => {
-									openMenuRowId = null;
-									onLogoutOrg(org);
-								}}
-							>
-								Logout
-							</button>
-						</div>
-					</details>
-				</div>
-			{/each}
-		</div>
-	{:else}
-		<div class="empty-state">
-			<h3>No orgs connected</h3>
-			<p>MavMeta did not find any local Salesforce CLI auth files.</p>
-		</div>
-	{/if}
+							</div>
+						</details>
+					</div>
+				{/each}
+			</div>
+		{:else}
+			<div class="empty-state">
+				<h3>No orgs connected</h3>
+				<p>MavMeta did not find any local Salesforce CLI auth files.</p>
+			</div>
+		{/if}
+	</div>
 </div>

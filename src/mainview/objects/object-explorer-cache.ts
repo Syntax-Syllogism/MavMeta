@@ -1,6 +1,16 @@
 import type { ChildMetadataItem, ObjectSummary } from "../../shared/object-explorer";
 
-export const objectListCache = new Map<string, ObjectSummary[]>();
+export type ObjectListCacheEntry = {
+	objects: ObjectSummary[];
+	nextCursor: string | undefined;
+	done: boolean;
+};
+
+export const objectListCache = new Map<string, ObjectListCacheEntry>();
+
+export function getObjectListCacheKey(username: string, search: string | undefined): string {
+	return `${username}::${(search ?? "").trim().toLowerCase()}`;
+}
 
 export const objectChildrenCache = new Map<
 	string,

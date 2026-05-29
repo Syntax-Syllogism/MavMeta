@@ -66,8 +66,8 @@
 	let createdUsername = $state<string | undefined>();
 	let createWarnings = $state<string[]>([]);
 
-	const devHubOrgs = $derived(orgs.filter((org) => org.environment === "developer"));
-	const otherOrgs = $derived(orgs.filter((org) => org.environment !== "developer"));
+	const devHubOrgs = $derived(orgs.filter((org) => org.environment === "dev-hub"));
+	const otherOrgs = $derived(orgs.filter((org) => org.environment !== "dev-hub"));
 
 	const canProceedFromDevHub = $derived(selectedDevHubUsername !== "");
 

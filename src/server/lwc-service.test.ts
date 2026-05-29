@@ -263,6 +263,35 @@ describe("LwcService.deployBundle", () => {
 		}
 	});
 
+	it("returns a friendly schema-reference error for FIELD_INTEGRITY_EXCEPTION", async () => {
+		tooling.query
+			.mockReset()
+			.mockResolvedValueOnce({ records: [{ LastModifiedDate: expectedDate }] })
+			.mockResolvedValueOnce({
+				records: [{ Id: RESOURCE_ID, FilePath: "lwc/helloWorld/helloWorld.js" }],
+			});
+
+		tooling
+			.sobject("LightningComponentResource")
+			.update.mockRejectedValue(
+				new Error(
+					"Invalid reference CustomObject__c.CustomField__c of type sobjectField in file helloWorld.js: Source",
+				),
+			);
+
+		const result = await service.deployBundle(deployRequest);
+
+		expect(result.status).toBe("error");
+		if (result.status === "error") {
+			expect(result.errors).toHaveLength(1);
+			expect(result.errors[0].filePath).toBe("lwc/helloWorld/helloWorld.js");
+			expect(result.errors[0].message).toContain("CustomObject__c.CustomField__c");
+			expect(result.errors[0].message).toContain("FLS");
+			expect(result.errors[0].message).toContain("Tooling API");
+			expect(result.errors[0].severity).toBe("error");
+		}
+	});
+
 	it("returns a generic error entry when the thrown message has no LWC pattern", async () => {
 		tooling.query
 			.mockReset()

@@ -44,6 +44,18 @@ describe("object explorer view model", () => {
 		objectType: "customSetting",
 	};
 
+	const bigObj: ObjectSummary = {
+		apiName: "Rider_History__b",
+		label: "Rider History",
+		objectType: "bigObject",
+	};
+
+	const externalObj: ObjectSummary = {
+		apiName: "phone_plans__x",
+		label: "Phone Plans",
+		objectType: "externalObject",
+	};
+
 	describe("matchesObjectSearch", () => {
 		it("returns true for empty search", () => {
 			expect(matchesObjectSearch(accountObj, "")).toBe(true);
@@ -129,6 +141,8 @@ describe("object explorer view model", () => {
 			expect(getObjectTypeLabel(cmdtObj)).toBe("Custom Metadata Type");
 			expect(getObjectTypeLabel(eventObj)).toBe("Platform Event");
 			expect(getObjectTypeLabel(settingObj)).toBe("Custom Setting");
+			expect(getObjectTypeLabel(bigObj)).toBe("Big Object");
+			expect(getObjectTypeLabel(externalObj)).toBe("External Object");
 		});
 	});
 

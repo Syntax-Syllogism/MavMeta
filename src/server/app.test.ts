@@ -8,6 +8,7 @@ import { createApp } from "./app";
 import type { DeployServiceApi } from "./deploy-service";
 import type { LwcServiceApi } from "./lwc-service";
 import type { MetadataServiceApi } from "./metadata-service";
+import type { ObjectExplorerServiceApi } from "./object-explorer-service";
 import type { OrgServiceApi } from "./org-service";
 import type { RestServiceApi } from "./rest-service";
 import type { SoqlServiceApi } from "./soql-service";
@@ -59,6 +60,26 @@ function createMetadataServiceMock(): MetadataServiceApi {
 					state: "Changed",
 				},
 			],
+		}),
+	};
+}
+
+function createObjectExplorerServiceMock(): ObjectExplorerServiceApi {
+	return {
+		listObjects: vi.fn().mockResolvedValue({
+			target: { username: "user@example.com" },
+			objects: [],
+		}),
+		listObjectsPage: vi.fn().mockResolvedValue({
+			target: { username: "user@example.com" },
+			objects: [],
+			nextCursor: undefined,
+		}),
+		listObjectChildren: vi.fn().mockResolvedValue({
+			target: { username: "user@example.com" },
+			objectApiName: "Account",
+			children: {},
+			errors: [],
 		}),
 	};
 }
@@ -389,6 +410,69 @@ describe("createApp", () => {
 			target: { username: "user@example.com" },
 			sobjectType: "Account",
 			fieldFullName: "Account.Legacy_Code__c",
+		});
+	});
+
+	it("passes object page requests to object explorer service", async () => {
+		const objectExplorerService = createObjectExplorerServiceMock();
+		const app = createTestApp({
+			orgService: createOrgServiceMock(),
+			metadataService: createMetadataServiceMock(),
+			deployService: createDeployServiceMock(),
+			objectExplorerService,
+		});
+		apps.push(app);
+
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/objects/list-page",
+				payload: {
+					target: { username: "user@example.com" },
+					cursor: "Account",
+					search: "invoice",
+					limit: 50,
+				},
+			}),
+		);
+
+		expect(response.statusCode).toBe(200);
+		expect(objectExplorerService.listObjectsPage).toHaveBeenCalledWith({
+			target: { username: "user@example.com" },
+			cursor: "Account",
+			search: "invoice",
+			limit: 50,
+		});
+	});
+
+	it("accepts blank optional object page search as omitted", async () => {
+		const objectExplorerService = createObjectExplorerServiceMock();
+		const app = createTestApp({
+			orgService: createOrgServiceMock(),
+			metadataService: createMetadataServiceMock(),
+			deployService: createDeployServiceMock(),
+			objectExplorerService,
+		});
+		apps.push(app);
+
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/objects/list-page",
+				payload: {
+					target: { username: "user@example.com" },
+					search: "",
+					limit: 50,
+				},
+			}),
+		);
+
+		expect(response.statusCode).toBe(200);
+		expect(objectExplorerService.listObjectsPage).toHaveBeenCalledWith({
+			target: { username: "user@example.com" },
+			cursor: undefined,
+			search: undefined,
+			limit: 50,
 		});
 	});
 

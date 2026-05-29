@@ -243,6 +243,9 @@ export function createApp(options: CreateAppOptions = {}) {
 	app.post("/api/objects/list", async (request) =>
 		objectExplorerService.listObjects(readOrgTargetRequest(request.body)),
 	);
+	app.post("/api/objects/list-page", async (request) =>
+		objectExplorerService.listObjectsPage(readListObjectsPageRequest(request.body)),
+	);
 	app.post("/api/objects/children", async (request) =>
 		objectExplorerService.listObjectChildren(readListObjectChildrenRequest(request.body)),
 	);
@@ -423,6 +426,21 @@ function readStringField(
 	}
 
 	return value.trim();
+}
+
+function readOptionalStringField(
+	body: Record<string, unknown>,
+	fieldName: string,
+): string | undefined {
+	const value = body[fieldName];
+
+	if (value === undefined || value === null) {
+		return undefined;
+	}
+	if (typeof value !== "string") {
+		throw new ApiError(400, "INVALID_REQUEST", `Field "${fieldName}" must be a string.`);
+	}
+	return value.trim() || undefined;
 }
 
 function readOrgTarget(body: unknown): { username: string; startPath?: string } {
@@ -815,6 +833,42 @@ function readOrgTargetRequest(body: unknown): { target: { username: string } } {
 		target: {
 			username: readStringField(targetBody, "username", { required: true }) as string,
 		},
+	};
+}
+
+function readListObjectsPageRequest(body: unknown): {
+	target: { username: string };
+	cursor?: string;
+	search?: string;
+	limit?: number;
+} {
+	const objectBody = readObjectBody(body);
+	const targetBody = readObjectBody(objectBody.target);
+	const limitRaw = objectBody.limit;
+	let limit: number | undefined;
+	if (limitRaw !== undefined) {
+		if (
+			typeof limitRaw !== "number" ||
+			!Number.isInteger(limitRaw) ||
+			limitRaw <= 0 ||
+			limitRaw > 200
+		) {
+			throw new ApiError(
+				400,
+				"INVALID_REQUEST",
+				'Field "limit" must be an integer between 1 and 200.',
+			);
+		}
+		limit = limitRaw;
+	}
+
+	return {
+		target: {
+			username: readStringField(targetBody, "username", { required: true }) as string,
+		},
+		cursor: readOptionalStringField(objectBody, "cursor"),
+		search: readOptionalStringField(objectBody, "search"),
+		limit,
 	};
 }
 

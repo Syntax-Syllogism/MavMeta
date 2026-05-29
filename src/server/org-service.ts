@@ -30,23 +30,28 @@ export type OrgServiceApi = {
 	deleteScratchOrg(target: OrgTarget): Promise<OrgActionResponse>;
 };
 
+type OrgInfo = {
+	isSandbox: boolean;
+	trialExpirationDate: string | undefined;
+};
+
 export class OrgService implements OrgServiceApi {
 	private oauthInFlight = false;
-	private readonly trialExpirationCache = new Map<
+	private readonly orgInfoCache = new Map<
 		string,
 		{
-			value: string | undefined;
+			value: OrgInfo;
 			expiresAt: number;
 		}
 	>();
-	private readonly trialExpirationInflight = new Map<string, Promise<string | undefined>>();
-	private readonly trialExpirationCacheTtlMs: number;
+	private readonly orgInfoInflight = new Map<string, Promise<OrgInfo>>();
+	private readonly orgInfoCacheTtlMs: number;
 
 	constructor(
 		private readonly activeOrgStore: ActiveOrgStoreApi = new ActiveOrgStore(),
-		options?: { trialExpirationCacheTtlMs?: number },
+		options?: { orgInfoCacheTtlMs?: number },
 	) {
-		this.trialExpirationCacheTtlMs = options?.trialExpirationCacheTtlMs ?? 5 * 60 * 1000;
+		this.orgInfoCacheTtlMs = options?.orgInfoCacheTtlMs ?? 5 * 60 * 1000;
 	}
 
 	async listOrgs(): Promise<OrgListResponse> {
@@ -246,21 +251,18 @@ export class OrgService implements OrgServiceApi {
 	}
 
 	private async toOrgSummary(authorization: OrgAuthorization): Promise<OrgSummary> {
-		if (!authorization.isScratchOrg) {
-			return toOrgSummary(authorization);
-		}
-		const trialExpirationDate = await this.lookupTrialExpirationDate(authorization.username);
-		return toOrgSummary(authorization, trialExpirationDate);
+		const orgInfo = await this.lookupOrgInfo(authorization.username);
+		return toOrgSummary(authorization, orgInfo);
 	}
 
-	private async lookupTrialExpirationDate(username: string): Promise<string | undefined> {
+	private async lookupOrgInfo(username: string): Promise<OrgInfo> {
 		const now = Date.now();
-		const cached = this.trialExpirationCache.get(username);
+		const cached = this.orgInfoCache.get(username);
 		if (cached && cached.expiresAt > now) {
 			return cached.value;
 		}
 
-		const inflight = this.trialExpirationInflight.get(username);
+		const inflight = this.orgInfoInflight.get(username);
 		if (inflight) {
 			return inflight;
 		}
@@ -270,47 +272,49 @@ export class OrgService implements OrgServiceApi {
 				const org = await Org.create({ aliasOrUsername: username });
 				const connection = org.getConnection();
 				const response = await (connection.query(
-					"SELECT TrialExpirationDate FROM Organization",
+					"SELECT IsSandbox, TrialExpirationDate FROM Organization",
 				) as unknown as Promise<{
-					records?: Array<{ TrialExpirationDate?: string | null }>;
+					records?: Array<{ IsSandbox?: boolean | null; TrialExpirationDate?: string | null }>;
 				}>);
-				const value = response.records?.[0]?.TrialExpirationDate;
-				const normalized = typeof value === "string" && value.trim() ? value : undefined;
-				this.trialExpirationCache.set(username, {
-					value: normalized,
-					expiresAt: Date.now() + this.trialExpirationCacheTtlMs,
-				});
-				return normalized;
+				const record = response.records?.[0];
+				const trialExpirationDate =
+					typeof record?.TrialExpirationDate === "string" && record.TrialExpirationDate.trim()
+						? record.TrialExpirationDate
+						: undefined;
+				const value: OrgInfo = {
+					isSandbox: record?.IsSandbox === true,
+					trialExpirationDate,
+				};
+				this.orgInfoCache.set(username, { value, expiresAt: Date.now() + this.orgInfoCacheTtlMs });
+				return value;
 			} catch {
-				this.trialExpirationCache.set(username, {
-					value: undefined,
-					expiresAt: Date.now() + this.trialExpirationCacheTtlMs,
-				});
-				return undefined;
+				const value: OrgInfo = { isSandbox: false, trialExpirationDate: undefined };
+				this.orgInfoCache.set(username, { value, expiresAt: Date.now() + this.orgInfoCacheTtlMs });
+				return value;
 			} finally {
-				this.trialExpirationInflight.delete(username);
+				this.orgInfoInflight.delete(username);
 			}
 		})();
 
-		this.trialExpirationInflight.set(username, fetchPromise);
+		this.orgInfoInflight.set(username, fetchPromise);
 
 		return fetchPromise;
 	}
 }
 
-function toOrgSummary(authorization: OrgAuthorization, trialExpirationDate?: string): OrgSummary {
+function toOrgSummary(authorization: OrgAuthorization, orgInfo?: OrgInfo): OrgSummary {
 	return {
 		alias: authorization.aliases?.[0] ?? undefined,
 		username: authorization.username,
 		orgId: authorization.orgId,
 		instanceUrl: authorization.instanceUrl,
-		...(trialExpirationDate ? { trialExpirationDate } : {}),
+		...(orgInfo?.trialExpirationDate ? { trialExpirationDate: orgInfo.trialExpirationDate } : {}),
 		environment: authorization.isScratchOrg
 			? "scratch"
-			: authorization.isSandbox
+			: orgInfo?.isSandbox && !orgInfo.trialExpirationDate
 				? "sandbox"
 				: authorization.isDevHub
-					? "developer"
+					? "dev-hub"
 					: "production",
 		isDefault:
 			authorization.configs?.includes("target-org") === true ||

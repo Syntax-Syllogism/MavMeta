@@ -22,7 +22,7 @@ vi.mock("../backend/backend-client", () => ({
 function makeOrg(overrides: Partial<OrgSummary> = {}): OrgSummary {
 	return {
 		username: "hub@example.com",
-		environment: "developer",
+		environment: "dev-hub",
 		isDefault: false,
 		authStatus: "connected",
 		alias: "my-hub",
@@ -33,7 +33,7 @@ function makeOrg(overrides: Partial<OrgSummary> = {}): OrgSummary {
 const devHubOrg = makeOrg({
 	username: "hub@example.com",
 	alias: "my-hub",
-	environment: "developer",
+	environment: "dev-hub",
 });
 const sandboxOrg = makeOrg({
 	username: "sandbox@example.com",

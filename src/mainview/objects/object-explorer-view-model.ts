@@ -49,6 +49,8 @@ const OBJECT_TYPE_LABELS: Record<ObjectType, string> = {
 	customMetadata: "Custom Metadata Type",
 	platformEvent: "Platform Event",
 	customSetting: "Custom Setting",
+	bigObject: "Big Object",
+	externalObject: "External Object",
 };
 
 export function getObjectTypeLabel(obj: ObjectSummary): string {

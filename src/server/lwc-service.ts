@@ -129,7 +129,10 @@ export class LwcService implements LwcServiceApi {
 			return {
 				status: "error",
 				durationMs: Date.now() - start,
-				errors: parseLwcErrors(err),
+				errors: parseLwcErrors(
+					err,
+					request.files.map((f) => f.path),
+				),
 			};
 		}
 
@@ -184,7 +187,11 @@ async function checkConflict(
 // LWC Tooling API compile errors: "LWC1099: message\n  lwc/comp/file.js:line:col"
 const LWC_ERROR_RE = /LWC\d+:\s*([^\n]+)(?:\n\s+([\w/.-]+):(\d+):(\d+))?/g;
 
-function parseLwcErrors(err: unknown): LwcCompileError[] {
+// Tooling API schema validation: "Invalid reference Foo__c.Bar__c of type sobjectField in file foo.js: Source"
+const SCHEMA_REF_ERROR_RE =
+	/Invalid reference (\S+) of type sobjectField in file ([\w./-]+):\s*Source/g;
+
+function parseLwcErrors(err: unknown, requestPaths: string[] = []): LwcCompileError[] {
 	const message = err instanceof Error ? err.message : String(err);
 	const errors: LwcCompileError[] = [];
 
@@ -200,7 +207,28 @@ function parseLwcErrors(err: unknown): LwcCompileError[] {
 		});
 	}
 
+	SCHEMA_REF_ERROR_RE.lastIndex = 0;
+	while ((match = SCHEMA_REF_ERROR_RE.exec(message)) !== null) {
+		const ref = match[1];
+		const fileName = match[2];
+		errors.push({
+			filePath: resolveFilePath(fileName, requestPaths),
+			message:
+				`Could not resolve @salesforce/schema reference '${ref}'. ` +
+				`Confirm the field exists in the target org and the running user has FLS access ` +
+				`(managed-package fields require the namespace prefix). ` +
+				`If the field is confirmed present and accessible, this can also be a Salesforce ` +
+				`Tooling API bug with @salesforce/schema imports.`,
+			severity: "error",
+		});
+	}
+
 	return errors.length > 0 ? errors : [{ filePath: "", message, severity: "error" }];
+}
+
+function resolveFilePath(fileName: string, requestPaths: string[]): string {
+	const match = requestPaths.find((p) => p === fileName || p.endsWith(`/${fileName}`));
+	return match ?? fileName;
 }
 
 function validateBundleId(bundleId: string): void {

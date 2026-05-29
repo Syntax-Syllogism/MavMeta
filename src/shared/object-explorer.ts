@@ -5,7 +5,9 @@ export type ObjectType =
 	| "custom"
 	| "customMetadata"
 	| "platformEvent"
-	| "customSetting";
+	| "customSetting"
+	| "bigObject"
+	| "externalObject";
 
 export type ObjectSummary = {
 	apiName: string;
@@ -22,6 +24,19 @@ export type ListObjectsRequest = {
 export type ListObjectsResponse = {
 	target: OrgTarget;
 	objects: ObjectSummary[];
+};
+
+export type ListObjectsPageRequest = {
+	target: OrgTarget;
+	cursor?: string;
+	search?: string;
+	limit?: number;
+};
+
+export type ListObjectsPageResponse = {
+	target: OrgTarget;
+	objects: ObjectSummary[];
+	nextCursor?: string;
 };
 
 export type ChildMetadataItem = {

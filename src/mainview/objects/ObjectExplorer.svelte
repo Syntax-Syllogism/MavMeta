@@ -9,14 +9,18 @@
 		type ObjectSummary,
 	} from "../../shared/object-explorer";
 	import {
-		matchesObjectSearch,
 		getCategoryLabel,
 		childItemToComponentSummary,
 		getObjectTypeLabel,
 		formatChildLabel,
 		isStageableCustomFieldChild,
 	} from "./object-explorer-view-model";
-	import { objectChildrenCache, objectListCache } from "./object-explorer-cache";
+	import {
+		getObjectListCacheKey,
+		objectChildrenCache,
+		objectListCache,
+		type ObjectListCacheEntry,
+	} from "./object-explorer-cache";
 	import FieldAccessModal from "./FieldAccessModal.svelte";
 
 	let {
@@ -35,9 +39,18 @@
 	} = $props();
 
 	let isLoadingObjects = $state(false);
+	let isLoadingMoreObjects = $state(false);
 	let objects = $state<ObjectSummary[]>([]);
 	let objectLoadError = $state<string | undefined>();
+	let objectPaginationError = $state<string | undefined>();
 	let objectSearch = $state("");
+	let activeObjectSearch = $state("");
+	let hasLoadedObjectPage = $state(false);
+	let hasMoreObjects = $state(false);
+	let objectSearchDebounceTimer: ReturnType<typeof setTimeout> | undefined;
+	let currentObjectRequestId = 0;
+	let loadingObjectRequestId: number | undefined;
+	let lastObjectUsername: string | undefined;
 
 	let selectedObjectApiName = $state<string | undefined>();
 	let isLoadingChildren = $state(false);
@@ -54,8 +67,6 @@
 	let currentSourceRequestId = 0;
 	let openFieldActionMenuRowId = $state<string | null>(null);
 	let selectedFieldForAccess = $state<{ sobjectType: string; fieldFullName: string } | undefined>();
-
-	const filteredObjects = $derived(objects.filter((obj) => matchesObjectSearch(obj, objectSearch)));
 
 	const selectedObject = $derived(objects.find((obj) => obj.apiName === selectedObjectApiName));
 
@@ -97,32 +108,133 @@
 
 	const categoryErrorMap = $derived(new Map(childErrors.map((e) => [e.metadataType, e.message])));
 
-	async function loadObjects() {
+	function resetSelectedObject() {
+		selectedObjectApiName = undefined;
+		selectedChildFullName = undefined;
+		openFieldActionMenuRowId = null;
+		selectedFieldForAccess = undefined;
+		children = {};
+		childErrors = [];
+		activeCategory = "CustomField";
+		childSortKey = null;
+	}
+
+	function beginObjectBrowse() {
 		if (!activeOrg) return;
-		const cached = objectListCache.get(activeOrg.username);
+		const requestId = ++currentObjectRequestId;
+		const cacheKey = getObjectListCacheKey(activeOrg.username, activeObjectSearch);
+		const cached = objectListCache.get(cacheKey);
+		objectLoadError = undefined;
+		objectPaginationError = undefined;
+		resetSelectedObject();
+
 		if (cached) {
-			objects = cached;
-			objectLoadError = undefined;
-			return;
+			objects = cached.objects;
+			hasLoadedObjectPage = true;
+			hasMoreObjects = !cached.done;
+		} else {
+			objects = [];
+			hasLoadedObjectPage = false;
+			hasMoreObjects = true;
 		}
 
-		isLoadingObjects = true;
-		objectLoadError = undefined;
-		objects = [];
-		selectedObjectApiName = undefined;
-		children = {};
+		if (!cached || !cached.done) {
+			void loadNextObjectPage(requestId);
+		}
+	}
+
+	async function loadNextObjectPage(requestId = currentObjectRequestId) {
+		if (!activeOrg) return;
+		if ((isLoadingObjects || isLoadingMoreObjects) && loadingObjectRequestId === requestId) return;
+		const username = activeOrg.username;
+		const search = activeObjectSearch;
+		const cacheKey = getObjectListCacheKey(username, search);
+		let cached = objectListCache.get(cacheKey);
+		if (cached?.done) return;
+
+		const isFirstPage = !cached || cached.objects.length === 0;
+		isLoadingObjects = isFirstPage;
+		isLoadingMoreObjects = !isFirstPage;
+		loadingObjectRequestId = requestId;
+		if (isFirstPage) {
+			objectLoadError = undefined;
+		}
+		objectPaginationError = undefined;
 
 		try {
-			const response = await backendClient.listObjects({
-				target: { username: activeOrg.username },
+			const response = await backendClient.listObjectsPage({
+				target: { username },
+				cursor: cached?.nextCursor,
+				search: search || undefined,
+				limit: 200,
 			});
-			objects = response.objects;
-			objectListCache.set(activeOrg.username, response.objects);
+			if (requestId !== currentObjectRequestId || activeOrg?.username !== username) return;
+
+			cached = objectListCache.get(cacheKey) ?? createObjectListCacheEntry();
+			const knownApiNames = new Set(cached.objects.map((obj) => obj.apiName));
+			const nextObjects = response.objects.filter((obj) => !knownApiNames.has(obj.apiName));
+			cached.objects = [...cached.objects, ...nextObjects];
+			cached.nextCursor = response.nextCursor;
+			cached.done = response.nextCursor === undefined;
+			objectListCache.set(cacheKey, cached);
+			objects = cached.objects;
+			hasLoadedObjectPage = true;
+			hasMoreObjects = !cached.done;
 		} catch (err) {
-			objectLoadError = err instanceof Error ? err.message : "Failed to load objects.";
+			if (requestId !== currentObjectRequestId) return;
+			const message = err instanceof Error ? err.message : "Failed to load objects.";
+			if (isFirstPage) {
+				objectLoadError = message;
+				hasLoadedObjectPage = true;
+			} else {
+				objectPaginationError = message;
+			}
 		} finally {
-			isLoadingObjects = false;
+			if (loadingObjectRequestId === requestId) {
+				isLoadingObjects = false;
+				isLoadingMoreObjects = false;
+				loadingObjectRequestId = undefined;
+			}
 		}
+	}
+
+	function createObjectListCacheEntry(): ObjectListCacheEntry {
+		return {
+			objects: [],
+			nextCursor: undefined,
+			done: false,
+		};
+	}
+
+	function scheduleObjectSearchReload() {
+		if (objectSearchDebounceTimer) clearTimeout(objectSearchDebounceTimer);
+		objectSearchDebounceTimer = setTimeout(() => {
+			const nextSearch = objectSearch.trim();
+			if (nextSearch === activeObjectSearch) return;
+			activeObjectSearch = nextSearch;
+			beginObjectBrowse();
+		}, 250);
+	}
+
+	function objectPageSentinel(node: HTMLElement) {
+		if (typeof IntersectionObserver === "undefined") {
+			return {};
+		}
+		const observer = new IntersectionObserver(
+			(entries) => {
+				if (entries.some((entry) => entry.isIntersecting)) {
+					void loadNextObjectPage();
+				}
+			},
+			{ root: node.closest(".object-table") },
+		);
+		observer.observe(node);
+
+		return {
+			destroy() {
+				observer.disconnect();
+			},
+		};
 	}
 
 	async function selectObject(apiName: string) {
@@ -264,17 +376,33 @@
 		};
 		document.addEventListener("mousedown", onDocumentMouseDown);
 
-		if (activeOrg) {
-			void loadObjects();
-		}
-
 		return () => {
 			document.removeEventListener("mousedown", onDocumentMouseDown);
 		};
 	});
 
 	onDestroy(() => {
+		if (objectSearchDebounceTimer) clearTimeout(objectSearchDebounceTimer);
+		currentObjectRequestId++;
 		openFieldActionMenuRowId = null;
+	});
+
+	$effect(() => {
+		const username = activeOrg?.username;
+		if (username === lastObjectUsername) return;
+		lastObjectUsername = username;
+		objectSearch = "";
+		activeObjectSearch = "";
+		currentObjectRequestId++;
+		objects = [];
+		objectLoadError = undefined;
+		objectPaginationError = undefined;
+		hasLoadedObjectPage = false;
+		hasMoreObjects = false;
+		resetSelectedObject();
+		if (username) {
+			beginObjectBrowse();
+		}
 	});
 </script>
 
@@ -295,7 +423,7 @@
 						bind:value={objectSearch}
 						autocomplete="off"
 						placeholder="Account, Contact, My_Obj__c..."
-						disabled={!objects.length}
+						oninput={scheduleObjectSearchReload}
 					/>
 				</label>
 			</div>
@@ -315,7 +443,7 @@
 						<span>Label</span>
 						<span>API Name</span>
 					</div>
-					{#each filteredObjects as obj (obj.apiName)}
+					{#each objects as obj (obj.apiName)}
 						<button
 							class="object-row-button"
 							class:active-row={obj.apiName === selectedObjectApiName}
@@ -327,11 +455,29 @@
 							<span title={obj.apiName}>{obj.apiName}</span>
 						</button>
 					{/each}
-					{#if !filteredObjects.length}
-						<div class="empty-state compact-empty">
-							<p>No objects match the filter.</p>
+					{#if objectPaginationError}
+						<div class="pagination-error" role="alert">
+							<span>{objectPaginationError}</span>
+							<button type="button" class="inline-action" onclick={() => loadNextObjectPage()}>
+								Retry
+							</button>
 						</div>
 					{/if}
+					{#if isLoadingMoreObjects}
+						<div class="loading-more" aria-live="polite">Loading more...</div>
+					{/if}
+					{#if hasMoreObjects}
+						<div class="object-page-sentinel" use:objectPageSentinel aria-hidden="true"></div>
+					{/if}
+				</div>
+			{:else if hasLoadedObjectPage}
+				<div class="empty-state">
+					<h3>No objects found</h3>
+					<p>
+						{activeObjectSearch
+							? "No objects match the filter."
+							: "This org did not return any customizable objects."}
+					</p>
 				</div>
 			{:else}
 				<div class="empty-state">
@@ -752,6 +898,30 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	.pagination-error {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-2);
+		padding: var(--space-2) var(--space-3);
+		border-top: 1px solid var(--color-border-subtle);
+		color: var(--color-danger);
+		background: var(--color-danger-subtle);
+		font-size: 0.78rem;
+	}
+
+	.loading-more {
+		padding: var(--space-2) var(--space-3);
+		border-top: 1px solid var(--color-border-subtle);
+		color: var(--color-text-muted);
+		font-size: 0.78rem;
+	}
+
+	.object-page-sentinel {
+		height: var(--space-4);
+		border-top: 1px solid var(--color-border-subtle);
 	}
 
 	.object-detail-panel {

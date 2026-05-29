@@ -2,6 +2,11 @@
 
 import { ApiError } from "./api-error";
 import { assertSalesforceHost } from "./salesforce-host";
+import {
+	runToolingQuery,
+	type ToolingQueryConnection,
+	type ToolingQueryResponse,
+} from "./tooling-query";
 import type {
 	BulkQueryResultRequest,
 	BulkQueryStatusRequest,
@@ -18,12 +23,7 @@ import type {
 	ValidateQueryResponse,
 } from "../shared/soql";
 
-type QueryResponse = {
-	records: Array<Record<string, unknown>>;
-	totalSize: number;
-	done: boolean;
-	nextRecordsUrl?: string;
-};
+type QueryResponse = ToolingQueryResponse;
 
 type DescribeGlobalRaw = {
 	sobjects?: Array<{
@@ -50,7 +50,7 @@ type DescribeObjectRaw = {
 	}>;
 };
 
-type SoqlConnection = {
+type SoqlConnection = ToolingQueryConnection & {
 	instanceUrl: string;
 	accessToken?: string;
 	getApiVersion(): string;
@@ -344,35 +344,6 @@ function sanitizeRecords(records: Array<Record<string, unknown>>) {
 		delete sanitized.attributes;
 		return sanitized;
 	});
-}
-
-async function runToolingQuery(
-	connection: SoqlConnection,
-	soql: string,
-	fetcher: typeof fetch,
-): Promise<QueryResponse> {
-	assertSalesforceHost(connection.instanceUrl);
-	if (!connection.accessToken?.trim()) {
-		throw new ApiError(401, "INVALID_SESSION", "Salesforce access token is missing.");
-	}
-	const encoded = encodeURIComponent(soql);
-	const version = connection.getApiVersion();
-	const timeoutSignal = AbortSignal.timeout(15000);
-	const response = await fetcher(
-		`${connection.instanceUrl}/services/data/v${version}/tooling/query/?q=${encoded}`,
-		{
-			method: "GET",
-			signal: timeoutSignal,
-			headers: {
-				Authorization: `Bearer ${connection.accessToken}`,
-				Accept: "application/json",
-			},
-		},
-	);
-	if (!response.ok) {
-		throw new Error(await readFetchError(response));
-	}
-	return (await response.json()) as QueryResponse;
 }
 
 function ensureToolingValidationLimit(soql: string): string {

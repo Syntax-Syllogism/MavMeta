@@ -54,6 +54,9 @@ describe("OrgService", () => {
 				query: async () => ({
 					records: [
 						{
+							IsSandbox:
+								aliasOrUsername === "sandbox@example.com" ||
+								aliasOrUsername === "scratch@example.com",
 							TrialExpirationDate:
 								aliasOrUsername === "scratch@example.com" ? "2026-06-01T00:00:00.000Z" : null,
 						},
@@ -194,28 +197,7 @@ describe("OrgService", () => {
 		]);
 	});
 
-	it("does not query TrialExpirationDate for non-scratch orgs", async () => {
-		salesforceCoreMocks.listAllAuthorizations.mockResolvedValue([
-			{
-				username: "prod@example.com",
-				orgId: "00D000000000001",
-				aliases: ["prod"],
-				configs: ["target-org"],
-				isScratchOrg: false,
-				isSandbox: false,
-				isDevHub: false,
-				instanceUrl: "https://prod.example.com",
-				isExpired: false,
-			},
-		]);
-		const service = new OrgService(inMemoryActiveOrgStore());
-
-		await service.listOrgs();
-
-		expect(salesforceCoreMocks.orgCreate).not.toHaveBeenCalled();
-	});
-
-	it("caches TrialExpirationDate lookup across list refreshes", async () => {
+	it("caches org info lookup across list refreshes", async () => {
 		salesforceCoreMocks.listAllAuthorizations.mockResolvedValue([
 			{
 				username: "scratch@example.com",
@@ -229,7 +211,7 @@ describe("OrgService", () => {
 				isExpired: false,
 			},
 		]);
-		const service = new OrgService(inMemoryActiveOrgStore(), { trialExpirationCacheTtlMs: 60000 });
+		const service = new OrgService(inMemoryActiveOrgStore(), { orgInfoCacheTtlMs: 60000 });
 
 		await service.listOrgs();
 		await service.listOrgs();

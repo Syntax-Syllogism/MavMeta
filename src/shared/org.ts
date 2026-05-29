@@ -1,4 +1,4 @@
-export type OrgEnvironment = "production" | "sandbox" | "developer" | "scratch" | "unknown";
+export type OrgEnvironment = "production" | "sandbox" | "dev-hub" | "scratch" | "unknown";
 
 export type OrgAuthStatus = "connected" | "expired" | "unknown";
 

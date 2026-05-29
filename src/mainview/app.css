@@ -582,6 +582,7 @@ h3 {
 	grid-template-columns: minmax(180px, 0.8fr) minmax(240px, 1fr) minmax(160px, 240px);
 	gap: var(--space-3);
 	margin-bottom: var(--space-4);
+	flex-shrink: 0;
 }
 
 .metadata-toolbar {
@@ -632,6 +633,16 @@ select:focus {
 /* Allow absolutely-positioned dropdowns (action menus) to escape the table bounds */
 .org-table {
 	overflow: visible;
+}
+
+.org-panel {
+	overflow: hidden;
+}
+
+.org-table-scroll {
+	flex: 1 1 0;
+	min-height: 0;
+	overflow-y: auto;
 }
 
 .metadata-table {

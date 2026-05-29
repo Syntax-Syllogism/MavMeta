@@ -105,6 +105,7 @@
 	let isCartOpen = $state(false);
 	let isOrgSwitchAlertOpen = $state(false);
 	let pendingOrgToSwitch = $state<OrgSummary | undefined>();
+	let soqlHasQuery = $state(false);
 	let cartStep = $state<CartStep>("list");
 	let cartAction = $state<CartAction | undefined>();
 	let saveListName = $state("");
@@ -215,14 +216,14 @@
 	);
 	const compareTargetInstanceUrl = $derived(selectedCrossTargetOrg?.instanceUrl);
 	const isProductionLikeTarget = $derived(
-		activeOrg?.environment === "production" || activeOrg?.environment === "developer",
+		activeOrg?.environment === "production" || activeOrg?.environment === "dev-hub",
 	);
 	const selectedCrossTargetOrg = $derived(
 		orgs.find((org) => org.username === compareTargetUsername),
 	);
 	const isCrossTargetProductionLike = $derived(
 		selectedCrossTargetOrg?.environment === "production" ||
-			selectedCrossTargetOrg?.environment === "developer",
+			selectedCrossTargetOrg?.environment === "dev-hub",
 	);
 	const deployConfirmationPhrase = $derived(
 		getDeployConfirmationPhrase(
@@ -578,7 +579,11 @@
 	}
 
 	async function setActiveOrg(org: OrgSummary) {
-		if (activeOrg && activeOrg.username !== org.username && activeOrgStagedItems.length > 0) {
+		if (
+			activeOrg &&
+			activeOrg.username !== org.username &&
+			(activeOrgStagedItems.length > 0 || soqlHasQuery)
+		) {
 			pendingOrgToSwitch = org;
 			isOrgSwitchAlertOpen = true;
 			return;
@@ -1821,7 +1826,7 @@
 			{:else if selectedTool === "REST"}
 				<RestExplorer {activeOrg} apiVersion={metadataApiVersion} />
 			{:else if selectedTool === "SOQL"}
-				<SoqlExplorer {activeOrg} />
+				<SoqlExplorer {activeOrg} bind:hasSoqlQuery={soqlHasQuery} />
 			{:else if selectedTool === "LWC"}
 				<LwcPlayground {activeOrg} />
 			{:else if selectedTool === "Metadata"}
@@ -1902,22 +1907,45 @@
 				aria-modal="true"
 				aria-label="Confirm org switch"
 			>
-				<div>
-					<p class="eyebrow danger-text">Critical Alert</p>
-					<h2>Switching active org will empty your cart</h2>
-				</div>
-				<p>
-					Your cart contains <strong>{activeOrgStagedItems.length}</strong> items staged from
-					<strong>{activeOrgLabel}</strong>. Switching to
-					<strong>{pendingOrgToSwitch?.alias ?? pendingOrgToSwitch?.username}</strong>
-					will clear these items.
-				</p>
-				<div class="modal-actions">
-					<button class="btn btn--ghost" type="button" onclick={cancelOrgSwitch}>Cancel</button>
-					<button class="btn btn--danger" type="button" onclick={confirmOrgSwitch}>
-						Clear Cart & Switch
-					</button>
-				</div>
+				{#if activeOrgStagedItems.length > 0}
+					<div>
+						<p class="eyebrow danger-text">Critical Alert</p>
+						<h2>Switching active org will empty your cart</h2>
+					</div>
+					<p>
+						Your cart contains <strong>{activeOrgStagedItems.length}</strong> items staged from
+						<strong>{activeOrgLabel}</strong>. Switching to
+						<strong>{pendingOrgToSwitch?.alias ?? pendingOrgToSwitch?.username}</strong>
+						will clear these items.
+					</p>
+					{#if soqlHasQuery}
+						<p>
+							Your active SOQL query will also be lost. Copy it before switching if you need it.
+						</p>
+					{/if}
+					<div class="modal-actions">
+						<button class="btn btn--ghost" type="button" onclick={cancelOrgSwitch}>Cancel</button>
+						<button class="btn btn--danger" type="button" onclick={confirmOrgSwitch}>
+							Clear Cart & Switch
+						</button>
+					</div>
+				{:else}
+					<div>
+						<p class="eyebrow danger-text">Warning</p>
+						<h2>Switching org will discard your SOQL query</h2>
+					</div>
+					<p>
+						Your active SOQL query will be lost when switching to
+						<strong>{pendingOrgToSwitch?.alias ?? pendingOrgToSwitch?.username}</strong>. Copy the
+						query before switching if you want to keep it.
+					</p>
+					<div class="modal-actions">
+						<button class="btn btn--ghost" type="button" onclick={cancelOrgSwitch}>Cancel</button>
+						<button class="btn btn--danger" type="button" onclick={confirmOrgSwitch}>
+							Switch Org
+						</button>
+					</div>
+				{/if}
 			</div>
 		</div>
 	{/if}

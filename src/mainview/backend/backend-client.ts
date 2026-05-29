@@ -19,6 +19,8 @@ import type {
 import type {
 	ListObjectsRequest,
 	ListObjectsResponse,
+	ListObjectsPageRequest,
+	ListObjectsPageResponse,
 	ListObjectChildrenRequest,
 	ListObjectChildrenResponse,
 } from "../../shared/object-explorer";
@@ -237,6 +239,8 @@ export const backendClient = {
 		),
 	listObjects: (request: ListObjectsRequest) =>
 		requestJson<ListObjectsResponse>("POST", "/api/objects/list", request),
+	listObjectsPage: (request: ListObjectsPageRequest) =>
+		requestJson<ListObjectsPageResponse>("POST", "/api/objects/list-page", request),
 	listObjectChildren: (request: ListObjectChildrenRequest) =>
 		requestJson<ListObjectChildrenResponse>("POST", "/api/objects/children", request),
 	listFieldAccess: (request: FieldAccessRequest, options: { signal?: AbortSignal } = {}) =>

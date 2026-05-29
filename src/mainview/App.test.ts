@@ -56,6 +56,7 @@ vi.mock("./backend/backend-client", () => ({
 		soqlValidate: vi.fn(),
 		soqlRun: vi.fn(),
 		listObjects: vi.fn(),
+		listObjectsPage: vi.fn(),
 		listObjectChildren: vi.fn(),
 		listFieldAccess: vi.fn(),
 		listLwcBundles: vi.fn(),
@@ -115,6 +116,11 @@ describe("App Smoke Tests", () => {
 		mockedBackendClient.listObjects.mockResolvedValue({
 			target: { username: connectedOrg.username },
 			objects: [],
+		});
+		mockedBackendClient.listObjectsPage.mockResolvedValue({
+			target: { username: connectedOrg.username },
+			objects: [],
+			nextCursor: undefined,
 		});
 		mockedBackendClient.listObjectChildren.mockResolvedValue({
 			target: { username: connectedOrg.username },
@@ -334,12 +340,12 @@ describe("App Smoke Tests", () => {
 		await screen.findByRole("button", { name: "my-org" });
 
 		await fireEvent.click(screen.getByRole("button", { name: "Object Explorer" }));
-		await screen.findByText(/No objects loaded/i);
+		await screen.findByText(/No objects found/i);
 		await fireEvent.click(screen.getByRole("button", { name: "Environment Explorer" }));
 		await fireEvent.click(screen.getByRole("button", { name: "Object Explorer" }));
-		await screen.findByText(/No objects loaded/i);
+		await screen.findByText(/No objects found/i);
 
-		expect(mockedBackendClient.listObjects).toHaveBeenCalledTimes(1);
+		expect(mockedBackendClient.listObjectsPage).toHaveBeenCalledTimes(1);
 	});
 
 	it("reuses cached lwc bundle list when revisiting lwc tool", async () => {

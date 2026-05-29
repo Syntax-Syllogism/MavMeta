@@ -8,7 +8,7 @@ import { backendClient } from "../backend/backend-client";
 
 vi.mock("../backend/backend-client", () => ({
 	backendClient: {
-		listObjects: vi.fn(),
+		listObjectsPage: vi.fn(),
 		listObjectChildren: vi.fn(),
 		getComponentSource: vi.fn(),
 		listFieldAccess: vi.fn(),
@@ -31,9 +31,10 @@ describe("ObjectExplorer row actions", () => {
 		vi.clearAllMocks();
 		objectListCache.clear();
 		objectChildrenCache.clear();
-		mockedBackendClient.listObjects.mockResolvedValue({
+		mockedBackendClient.listObjectsPage.mockResolvedValue({
 			target: { username: activeOrg.username },
 			objects: [{ apiName: "Account", label: "Account", objectType: "standard" }],
+			nextCursor: undefined,
 		});
 		mockedBackendClient.listObjectChildren.mockResolvedValue({
 			target: { username: activeOrg.username },
@@ -117,5 +118,161 @@ describe("ObjectExplorer row actions", () => {
 			},
 			expect.any(Object),
 		);
+	});
+
+	it("loads another object page when the sentinel intersects", async () => {
+		let intersectionCallback: IntersectionObserverCallback | undefined;
+		const originalObserver = globalThis.IntersectionObserver;
+		class FakeIntersectionObserver {
+			readonly root = null;
+			readonly rootMargin = "";
+			readonly thresholds = [];
+
+			constructor(callback: IntersectionObserverCallback) {
+				intersectionCallback = callback;
+			}
+
+			observe = vi.fn();
+			unobserve = vi.fn();
+			disconnect = vi.fn();
+			takeRecords = vi.fn(() => []);
+		}
+		globalThis.IntersectionObserver =
+			FakeIntersectionObserver as unknown as typeof IntersectionObserver;
+		mockedBackendClient.listObjectsPage
+			.mockResolvedValueOnce({
+				target: { username: activeOrg.username },
+				objects: [{ apiName: "Account", label: "Account", objectType: "standard" }],
+				nextCursor: "Account",
+			})
+			.mockResolvedValueOnce({
+				target: { username: activeOrg.username },
+				objects: [{ apiName: "Contact", label: "Contact", objectType: "standard" }],
+				nextCursor: undefined,
+			});
+
+		try {
+			render(ObjectExplorer, {
+				activeOrg,
+				onIsChildStaged: () => false,
+				onToggleStagedChild: vi.fn(),
+				onToggleAllStagedChildren: vi.fn(),
+			});
+
+			await screen.findByRole("button", { name: /^Account Account$/ });
+			expect(intersectionCallback).toBeTruthy();
+			intersectionCallback?.(
+				[{ isIntersecting: true } as IntersectionObserverEntry],
+				{} as IntersectionObserver,
+			);
+
+			await screen.findByRole("button", { name: /^Contact Contact$/ });
+			expect(mockedBackendClient.listObjectsPage).toHaveBeenLastCalledWith({
+				target: { username: activeOrg.username },
+				cursor: "Account",
+				search: undefined,
+				limit: 200,
+			});
+		} finally {
+			globalThis.IntersectionObserver = originalObserver;
+		}
+	});
+
+	it("shows an empty loaded state instead of the waiting-for-org copy", async () => {
+		mockedBackendClient.listObjectsPage.mockResolvedValueOnce({
+			target: { username: activeOrg.username },
+			objects: [],
+			nextCursor: undefined,
+		});
+
+		render(ObjectExplorer, {
+			activeOrg,
+			onIsChildStaged: () => false,
+			onToggleStagedChild: vi.fn(),
+			onToggleAllStagedChildren: vi.fn(),
+		});
+
+		await screen.findByRole("heading", { name: "No objects found" });
+		expect(screen.queryByText(/Objects will load automatically/i)).toBeNull();
+	});
+
+	it("debounces search and keeps cached result sets separate", async () => {
+		vi.useFakeTimers();
+		mockedBackendClient.listObjectsPage
+			.mockResolvedValueOnce({
+				target: { username: activeOrg.username },
+				objects: [{ apiName: "Account", label: "Account", objectType: "standard" }],
+				nextCursor: undefined,
+			})
+			.mockResolvedValueOnce({
+				target: { username: activeOrg.username },
+				objects: [{ apiName: "Invoice__c", label: "Invoice", objectType: "custom" }],
+				nextCursor: undefined,
+			});
+
+		try {
+			render(ObjectExplorer, {
+				activeOrg,
+				onIsChildStaged: () => false,
+				onToggleStagedChild: vi.fn(),
+				onToggleAllStagedChildren: vi.fn(),
+			});
+
+			await screen.findByRole("button", { name: /^Account Account$/ });
+			await fireEvent.input(screen.getByLabelText("Filter Objects"), {
+				target: { value: "invoice" },
+			});
+			await vi.advanceTimersByTimeAsync(250);
+
+			await screen.findByRole("button", { name: /^Invoice Invoice__c$/ });
+			expect(mockedBackendClient.listObjectsPage).toHaveBeenLastCalledWith({
+				target: { username: activeOrg.username },
+				cursor: undefined,
+				search: "invoice",
+				limit: 200,
+			});
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it("starts a superseding search request while the initial object load is still pending", async () => {
+		vi.useFakeTimers();
+		mockedBackendClient.listObjectsPage
+			.mockImplementationOnce(() => new Promise(() => {}))
+			.mockResolvedValueOnce({
+				target: { username: activeOrg.username },
+				objects: [{ apiName: "Invoice__c", label: "Invoice", objectType: "custom" }],
+				nextCursor: undefined,
+			});
+
+		try {
+			render(ObjectExplorer, {
+				activeOrg,
+				onIsChildStaged: () => false,
+				onToggleStagedChild: vi.fn(),
+				onToggleAllStagedChildren: vi.fn(),
+			});
+
+			await screen.findByRole("heading", { name: "Loading objects" });
+			const searchInput = screen.getByLabelText("Filter Objects");
+			expect(searchInput.hasAttribute("disabled")).toBe(false);
+
+			await fireEvent.input(searchInput, { target: { value: "invoice" } });
+			await vi.advanceTimersByTimeAsync(250);
+
+			await waitFor(() => {
+				expect(mockedBackendClient.listObjectsPage).toHaveBeenCalledTimes(2);
+			});
+			await screen.findByRole("button", { name: /^Invoice Invoice__c$/ });
+			expect(mockedBackendClient.listObjectsPage).toHaveBeenLastCalledWith({
+				target: { username: activeOrg.username },
+				cursor: undefined,
+				search: "invoice",
+				limit: 200,
+			});
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 });

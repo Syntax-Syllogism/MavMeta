@@ -14,7 +14,10 @@
 	import { extractSelectedPaths, getPathValue } from "./soql-columns";
 	import Toast from "../common/Toast.svelte";
 
-	let { activeOrg }: { activeOrg: OrgSummary | undefined } = $props();
+	let {
+		activeOrg,
+		hasSoqlQuery = $bindable(false),
+	}: { activeOrg: OrgSummary | undefined; hasSoqlQuery?: boolean } = $props();
 
 	let api = $state<SoqlApiType>("rest");
 	let mode = $state<"builder" | "raw">("builder");
@@ -110,6 +113,10 @@
 			lastOrg = activeOrg?.username;
 			resetToolState();
 		}
+	});
+
+	$effect(() => {
+		hasSoqlQuery = effectiveSoql.trim().length > 0;
 	});
 
 	$effect(() => {
