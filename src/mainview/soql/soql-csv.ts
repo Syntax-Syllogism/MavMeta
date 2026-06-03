@@ -1,4 +1,4 @@
-﻿export function toCsv(records: Record<string, unknown>[]): string {
+export function toCsv(records: Record<string, unknown>[]): string {
 	if (!records.length) return "";
 	const columns = Array.from(new Set(records.flatMap((record) => Object.keys(record))));
 	const header = columns.join(",");

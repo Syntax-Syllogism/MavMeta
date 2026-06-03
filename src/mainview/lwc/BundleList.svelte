@@ -1,4 +1,4 @@
-﻿<script lang="ts">
+<script lang="ts">
 	import type { LwcBundleSummary } from "../../shared/lwc";
 	import { filterBundles } from "./lwc-view-model";
 

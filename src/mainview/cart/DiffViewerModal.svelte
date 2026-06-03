@@ -1,4 +1,4 @@
-﻿<script lang="ts">
+<script lang="ts">
 	import type { CrossOrgDiffResult } from "../../shared/metadata";
 	import { buildCompareDiffLines } from "./cart-view-model";
 
@@ -57,8 +57,8 @@
 		</header>
 
 		<div class="diff-col-headers">
-			<div class="diff-col-header">Source â€” {sourceOrgLabel}</div>
-			<div class="diff-col-header">Target â€” {targetOrgLabel}</div>
+			<div class="diff-col-header">Source — {sourceOrgLabel}</div>
+			<div class="diff-col-header">Target — {targetOrgLabel}</div>
 		</div>
 
 		<div class="diff-body" role="region" aria-label="Diff content">

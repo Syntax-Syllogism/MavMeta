@@ -1,4 +1,4 @@
-﻿<script lang="ts">
+<script lang="ts">
 	import { backendClient } from "../backend/backend-client";
 	import type { OrgSummary } from "../../shared/org";
 	import type { LwcBundleSummary, LwcCompileError, LwcFile } from "../../shared/lwc";
@@ -192,6 +192,14 @@
 		conflictData = undefined;
 		statusMessage = "Deploying to org...";
 
+		// After a short delay, update the status so a slower Metadata-API fallback
+		// deploy does not feel like a hang. The timer is cleared in the finally block.
+		const slowDeployHintTimer = setTimeout(() => {
+			if (isDeploying) {
+				statusMessage = "Still deploying… this can take a little longer.";
+			}
+		}, 4500);
+
 		try {
 			const result = await backendClient.deployLwcBundle({
 				orgUsername: activeOrg.username,
@@ -223,11 +231,12 @@
 					currentLastModifiedDate: result.currentLastModifiedDate,
 					changedFiles: result.changedFiles,
 				};
-				statusMessage = "Deploy conflict â€” org was modified after you loaded this bundle.";
+				statusMessage = "Deploy conflict — org was modified after you loaded this bundle.";
 			}
 		} catch (error) {
 			statusMessage = toErrorMessage(error);
 		} finally {
+			clearTimeout(slowDeployHintTimer);
 			isDeploying = false;
 		}
 	}

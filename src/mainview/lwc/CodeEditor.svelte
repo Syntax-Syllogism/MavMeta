@@ -1,4 +1,4 @@
-﻿<script lang="ts">
+<script lang="ts">
 	import { onDestroy } from "svelte";
 	import { EditorView, basicSetup } from "codemirror";
 	import { EditorState } from "@codemirror/state";

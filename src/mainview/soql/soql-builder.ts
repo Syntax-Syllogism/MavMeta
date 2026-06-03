@@ -1,4 +1,4 @@
-﻿export type SoqlFilter = {
+export type SoqlFilter = {
 	field: string;
 	operator: string;
 	value?: string;

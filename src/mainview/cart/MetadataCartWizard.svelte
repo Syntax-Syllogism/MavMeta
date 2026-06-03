@@ -1,4 +1,4 @@
-﻿<script lang="ts">
+<script lang="ts">
 	import Fish from "@lucide/svelte/icons/fish";
 	import type { CrossOrgDeployResult, DestructiveDeployResult } from "../../shared/deploy";
 	import type { CrossOrgDiffResult } from "../../shared/metadata";

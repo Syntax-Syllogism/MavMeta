@@ -1,4 +1,4 @@
-﻿import { Org } from "@salesforce/core";
+import { Org } from "@salesforce/core";
 
 import { ApiError } from "./api-error";
 import { assertSalesforceHost } from "./salesforce-host";

@@ -1,4 +1,4 @@
-﻿export type SoqlApiType = "rest" | "tooling";
+export type SoqlApiType = "rest" | "tooling";
 
 export type SObjectSummary = {
 	apiName: string;

@@ -1,4 +1,4 @@
-﻿<script lang="ts">
+<script lang="ts">
 	import { untrack } from "svelte";
 	import { backendClient } from "../backend/backend-client";
 	import type { OrgSummary } from "../../shared/org";

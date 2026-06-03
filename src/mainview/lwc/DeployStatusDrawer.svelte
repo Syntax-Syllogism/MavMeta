@@ -1,4 +1,4 @@
-﻿<script lang="ts">
+<script lang="ts">
 	import type { Snippet } from "svelte";
 	import type { LwcCompileError } from "../../shared/lwc";
 

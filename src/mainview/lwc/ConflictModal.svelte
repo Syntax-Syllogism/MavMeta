@@ -1,4 +1,4 @@
-﻿<script lang="ts">
+<script lang="ts">
 	type Props = {
 		currentLastModifiedDate: string;
 		changedFiles: string[];

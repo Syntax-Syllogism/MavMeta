@@ -1,4 +1,4 @@
-﻿<script lang="ts">
+<script lang="ts">
 	import { onMount } from "svelte";
 	import type { ComponentType } from "svelte";
 	import Building2 from "@lucide/svelte/icons/building-2";
@@ -1685,15 +1685,15 @@
 	}
 
 	function openSettingsPlaceholder() {
-		statusMessage = "Settings â€” coming soon.";
+		statusMessage = "Settings — coming soon.";
 	}
 </script>
 
 <main class="app-shell" class:busy={isBusy} class:light-theme={!isDarkTheme}>
 	<aside class="sidebar" aria-label="Primary">
-		<div class="brand-icon tooltip-trigger" role="img" aria-label="MavMeta â€” Admin Workbench">
+		<div class="brand-icon tooltip-trigger" role="img" aria-label="MavMeta — Admin Workbench">
 			<span class="brand-mark" aria-hidden="true"></span>
-			<span class="nav-tooltip" role="tooltip" aria-hidden="true">MavMeta â€” Admin Workbench</span>
+			<span class="nav-tooltip" role="tooltip" aria-hidden="true">MavMeta — Admin Workbench</span>
 		</div>
 
 		<nav class="nav-list" aria-label="Workbench tools">
@@ -1735,7 +1735,7 @@
 				onclick={openSettingsPlaceholder}
 			>
 				<Settings size={20} strokeWidth={1.9} aria-hidden="true" />
-				<span class="nav-tooltip" role="tooltip" aria-hidden="true">Settings â€” coming soon</span>
+				<span class="nav-tooltip" role="tooltip" aria-hidden="true">Settings — coming soon</span>
 			</button>
 		</div>
 	</aside>

@@ -1,4 +1,4 @@
-﻿<script lang="ts">
+<script lang="ts">
 	import type { ListSnapshotsResponse, OrgSnapshot } from "../../shared/scratch-org";
 	import type { OrgSummary } from "../../shared/org";
 	import { backendClient } from "../backend/backend-client";
@@ -273,7 +273,7 @@
 
 	function formatSnapshotDate(iso: string): string {
 		const value = new Date(iso);
-		return Number.isNaN(value.getTime()) ? "â€”" : value.toLocaleDateString();
+		return Number.isNaN(value.getTime()) ? "—" : value.toLocaleDateString();
 	}
 
 	function onDefinitionInput(value: string) {
@@ -426,7 +426,7 @@
 				</span>
 				<div>
 					<h2>Create Scratch Org</h2>
-					<p>STEP {currentStepIndex + 1} OF {stepLabels.length} â€” {currentStepLabel}</p>
+					<p>STEP {currentStepIndex + 1} OF {stepLabels.length} — {currentStepLabel}</p>
 				</div>
 			</div>
 			<button
@@ -737,7 +737,7 @@
 			{:else if currentStep === "definition"}
 				<div class="wizard-section">
 					<p class="wizard-section-hint">
-						Review and edit the scratch org definition JSON before creation. Edit freely â€” changes
+						Review and edit the scratch org definition JSON before creation. Edit freely — changes
 						here are sent directly to Salesforce.
 					</p>
 
@@ -747,7 +747,7 @@
 
 					{#if creationMode === "snapshot"}
 						<p class="snapshot-advisory">
-							<strong>Snapshot mode â€” advanced edits not recommended.</strong> When a
+							<strong>Snapshot mode — advanced edits not recommended.</strong> When a
 							<code>snapshot</code> key is present, Salesforce only honors a small set of co-supported
 							fields. Adding or changing other keys here is allowed by the editor but will likely cause
 							scratch org creation to fail. Stick with the pre-filled definition unless you know exactly
@@ -807,7 +807,7 @@
 									</div>
 									<div>
 										<span>Alias</span>
-										<strong>{alias || "â€”"}</strong>
+										<strong>{alias || "—"}</strong>
 									</div>
 									<div>
 										<span>Edition</span>

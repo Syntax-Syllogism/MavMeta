@@ -1,4 +1,4 @@
-﻿<script lang="ts">
+<script lang="ts">
 	import { onDestroy, onMount } from "svelte";
 	import { backendClient } from "../backend/backend-client";
 	import type { MetadataComponentSummary } from "../../shared/metadata";
@@ -840,7 +840,7 @@
 		overflow-y: auto;
 	}
 
-	/* Object directory rows â€” same pattern as .metadata-row-button */
+	/* Object directory rows — same pattern as .metadata-row-button */
 	.object-row {
 		display: grid;
 		grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr);
@@ -1072,7 +1072,7 @@
 		overflow-y: auto;
 	}
 
-	/* Child metadata rows â€” mirrors .component-row but with more columns */
+	/* Child metadata rows — mirrors .component-row but with more columns */
 	.child-row {
 		display: grid;
 		grid-template-columns:

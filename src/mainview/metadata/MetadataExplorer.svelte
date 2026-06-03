@@ -1,4 +1,4 @@
-﻿<script lang="ts">
+<script lang="ts">
 	import type { MetadataComponentSummary, MetadataTypeSummary } from "../../shared/metadata";
 	import {
 		formatMetadataDetailValue,
