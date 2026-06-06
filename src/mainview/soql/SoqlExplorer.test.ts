@@ -41,6 +41,13 @@ describe("SoqlExplorer", () => {
 		await fireEvent.keyDown(input, { key: "Enter" });
 	}
 
+	function expectLastRunSoql(expected: string) {
+		const request = mockedClient.soqlRun.mock.calls.at(-1)?.[0];
+		expect(request).toBeDefined();
+		expect(request?.soql.replace(/\s+/g, " ").trim()).toBe(expected);
+		return request;
+	}
+
 	beforeEach(() => {
 		vi.clearAllMocks();
 		vi.useFakeTimers();
@@ -206,14 +213,8 @@ describe("SoqlExplorer", () => {
 		await fireEvent.click(screen.getByRole("button", { name: "Tooling" }));
 		await selectSObject("Account");
 		await fireEvent.click(screen.getByRole("button", { name: "Run" }));
-		await waitFor(() => {
-			expect(mockedClient.soqlRun).toHaveBeenCalledWith(
-				expect.objectContaining({
-					api: "tooling",
-					soql: "SELECT Id FROM Account LIMIT 2000",
-				}),
-			);
-		});
+		const request = expectLastRunSoql("SELECT Id FROM Account LIMIT 2000");
+		expect(request).toEqual(expect.objectContaining({ api: "tooling" }));
 	});
 
 	it("builds filter/order/limit query from builder controls", async () => {
@@ -233,13 +234,7 @@ describe("SoqlExplorer", () => {
 		await fireEvent.input(screen.getByLabelText("Row limit"), { target: { value: "10" } });
 
 		await fireEvent.click(screen.getByRole("button", { name: "Run" }));
-		await waitFor(() => {
-			expect(mockedClient.soqlRun).toHaveBeenCalledWith(
-				expect.objectContaining({
-					soql: "SELECT Id FROM Account WHERE Name LIKE 'Acme%' ORDER BY Name DESC LIMIT 10",
-				}),
-			);
-		});
+		expectLastRunSoql("SELECT Id FROM Account WHERE Name LIKE 'Acme%' ORDER BY Name DESC LIMIT 10");
 	});
 
 	it("quotes phone filter values from builder", async () => {
@@ -256,13 +251,7 @@ describe("SoqlExplorer", () => {
 		await fireEvent.input(screen.getByLabelText("Filter value 1"), { target: { value: "123" } });
 		await fireEvent.click(screen.getByRole("button", { name: "Run" }));
 
-		await waitFor(() => {
-			expect(mockedClient.soqlRun).toHaveBeenCalledWith(
-				expect.objectContaining({
-					soql: "SELECT Id FROM Account WHERE Phone LIKE '123'",
-				}),
-			);
-		});
+		expectLastRunSoql("SELECT Id FROM Account WHERE Phone LIKE '123'");
 	});
 
 	it("builds picklist IN filters from multi-select values", async () => {
@@ -283,13 +272,7 @@ describe("SoqlExplorer", () => {
 		await fireEvent.change(input);
 
 		await fireEvent.click(screen.getByRole("button", { name: "Run" }));
-		await waitFor(() => {
-			expect(mockedClient.soqlRun).toHaveBeenCalledWith(
-				expect.objectContaining({
-					soql: "SELECT Id FROM Account WHERE Industry IN ('Tech','Finance')",
-				}),
-			);
-		});
+		expectLastRunSoql("SELECT Id FROM Account WHERE Industry IN ('Tech','Finance')");
 	});
 
 	it("clears filter state when sobject is cleared and refreshed", async () => {
