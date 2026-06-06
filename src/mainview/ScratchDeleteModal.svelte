@@ -37,8 +37,8 @@
 
 			<div class="warning-box">
 				<p>
-					Deleting this scratch org permanently removes all metadata and data in the org.
-					This action is unrecoverable.
+					Deleting this scratch org permanently removes all metadata and data in the org. This
+					action is unrecoverable.
 				</p>
 			</div>
 
@@ -48,14 +48,8 @@
 			</label>
 
 			<div class="modal-actions">
-				<button class="ghost-button" type="button" onclick={onCancel}>
-					Cancel
-				</button>
-				<button
-					class="primary-button danger-button"
-					type="submit"
-					disabled={!confirmed || isDeleting}
-				>
+				<button class="btn btn--ghost" type="button" onclick={onCancel}> Cancel </button>
+				<button class="btn btn--danger" type="submit" disabled={!confirmed || isDeleting}>
 					{isDeleting ? "Deleting" : "Confirm Delete"}
 				</button>
 			</div>

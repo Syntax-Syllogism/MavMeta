@@ -5,16 +5,16 @@
 MavMeta is in pre-1.0 development. Only the current release receives
 security fixes.
 
-| Version | Supported |
-| ------- | --------- |
-| `0.x.y` (current release) | ✅ |
-| Older `0.x` releases       | ❌ |
+| Version                   | Supported |
+| ------------------------- | --------- |
+| `0.x.y` (current release) | ✅        |
+| Older `0.x` releases      | ❌        |
 
 ## Reporting a Vulnerability
 
 Please **do not** open a public GitHub issue for security vulnerabilities.
 
-Email a description to **j.p.richter@gmail.com** with:
+Email a description to **<j.p.richter@gmail.com>** with:
 
 - a clear description of the issue,
 - reproduction steps or a proof of concept,

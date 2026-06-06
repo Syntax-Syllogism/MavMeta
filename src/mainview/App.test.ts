@@ -51,8 +51,14 @@ vi.mock("./backend/backend-client", () => ({
 		getDestructiveDeployStatus: vi.fn(),
 		cancelDestructiveDeploy: vi.fn(),
 		executeRestRequest: vi.fn(),
+		soqlDescribeGlobal: vi.fn(),
+		soqlDescribeObject: vi.fn(),
+		soqlValidate: vi.fn(),
+		soqlRun: vi.fn(),
 		listObjects: vi.fn(),
+		listObjectsPage: vi.fn(),
 		listObjectChildren: vi.fn(),
+		listFieldAccess: vi.fn(),
 		listLwcBundles: vi.fn(),
 		getLwcBundle: vi.fn(),
 		deployLwcBundle: vi.fn(),
@@ -111,15 +117,35 @@ describe("App Smoke Tests", () => {
 			target: { username: connectedOrg.username },
 			objects: [],
 		});
+		mockedBackendClient.listObjectsPage.mockResolvedValue({
+			target: { username: connectedOrg.username },
+			objects: [],
+			nextCursor: undefined,
+		});
 		mockedBackendClient.listObjectChildren.mockResolvedValue({
 			target: { username: connectedOrg.username },
 			objectApiName: "Account",
 			children: {},
 			errors: [],
 		});
+		mockedBackendClient.listFieldAccess.mockResolvedValue({
+			rows: [],
+			stats: {
+				totalActiveUsersWithAccess: 0,
+				profileGrants: 0,
+				permissionSetGrants: 0,
+				permissionSetGroupGrants: 0,
+				mutedUsers: 0,
+			},
+			warnings: [],
+		});
 		mockedBackendClient.listLwcBundles.mockResolvedValue({
 			bundles: [],
 		});
+		mockedBackendClient.soqlDescribeGlobal.mockResolvedValue({ sobjects: [] });
+		mockedBackendClient.soqlDescribeObject.mockResolvedValue({ sobject: "Account", fields: [] });
+		mockedBackendClient.soqlValidate.mockResolvedValue({ valid: true });
+		mockedBackendClient.soqlRun.mockResolvedValue({ records: [], totalSize: 0, done: true });
 		mockedBackendClient.getDestructiveDeployStatus.mockResolvedValue({
 			operationId: "op-1",
 			status: "succeeded",
@@ -241,14 +267,19 @@ describe("App Smoke Tests", () => {
 	it("renders icon rail navigation with accessible labels", async () => {
 		render(App);
 
-		await screen.findByRole("img", { name: "MavMeta — Admin Workbench" });
+		await screen.findByRole("img", {
+			name: (name) => name.includes("MavMeta") && name.includes("Admin Workbench"),
+		});
 		expect(screen.getByRole("button", { name: "Environment Explorer" })).toBeTruthy();
 		expect(screen.getByRole("button", { name: "Metadata Explorer" })).toBeTruthy();
 		expect(screen.getByRole("button", { name: "Object Explorer" })).toBeTruthy();
 		expect(screen.getByRole("button", { name: "LWC Editor" })).toBeTruthy();
 		expect(screen.getByRole("button", { name: "REST Explorer" })).toBeTruthy();
+		expect(screen.getByRole("button", { name: "SOQL Explorer" })).toBeTruthy();
 		expect(screen.getByRole("button", { name: "Toggle color theme" })).toBeTruthy();
-		expect(screen.getByRole("button", { name: "Settings (coming soon)" }).getAttribute("aria-disabled")).toBe("true");
+		expect(
+			screen.getByRole("button", { name: "Settings (coming soon)" }).getAttribute("aria-disabled"),
+		).toBe("true");
 		expect(screen.getByText("Admin Workbench")).toBeTruthy();
 	});
 
@@ -309,12 +340,12 @@ describe("App Smoke Tests", () => {
 		await screen.findByRole("button", { name: "my-org" });
 
 		await fireEvent.click(screen.getByRole("button", { name: "Object Explorer" }));
-		await screen.findByText(/No objects loaded/i);
+		await screen.findByText(/No objects found/i);
 		await fireEvent.click(screen.getByRole("button", { name: "Environment Explorer" }));
 		await fireEvent.click(screen.getByRole("button", { name: "Object Explorer" }));
-		await screen.findByText(/No objects loaded/i);
+		await screen.findByText(/No objects found/i);
 
-		expect(mockedBackendClient.listObjects).toHaveBeenCalledTimes(1);
+		expect(mockedBackendClient.listObjectsPage).toHaveBeenCalledTimes(1);
 	});
 
 	it("reuses cached lwc bundle list when revisiting lwc tool", async () => {

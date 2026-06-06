@@ -49,6 +49,8 @@ const OBJECT_TYPE_LABELS: Record<ObjectType, string> = {
 	customMetadata: "Custom Metadata Type",
 	platformEvent: "Platform Event",
 	customSetting: "Custom Setting",
+	bigObject: "Big Object",
+	externalObject: "External Object",
 };
 
 export function getObjectTypeLabel(obj: ObjectSummary): string {
@@ -65,4 +67,8 @@ export function formatChildLabel(childApiName: string): string {
 export function getObjectBadge(obj: ObjectSummary): string {
 	if (obj.namespacePrefix) return obj.namespacePrefix;
 	return OBJECT_TYPE_LABELS[obj.objectType];
+}
+
+export function isStageableCustomFieldChild(item: ChildMetadataItem): boolean {
+	return item.metadataType === "CustomField";
 }

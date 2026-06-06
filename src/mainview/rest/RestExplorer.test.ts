@@ -131,7 +131,9 @@ describe("RestExplorer", () => {
 		fireEvent.input(confirmInput, { target: { value: "my-prod" } });
 
 		await waitFor(() => {
-			expect(screen.getByRole<HTMLButtonElement>("button", { name: /send delete/i }).disabled).toBe(false);
+			expect(screen.getByRole<HTMLButtonElement>("button", { name: /send delete/i }).disabled).toBe(
+				false,
+			);
 		});
 	});
 
@@ -208,9 +210,9 @@ describe("RestExplorer", () => {
 		const historyButton = screen.getByRole("button", { name: /\/services\/data\/v62\.0\/limits/i });
 		fireEvent.click(historyButton);
 
-		expect(
-			screen.getByLabelText<HTMLInputElement>(/request path/i).value,
-		).toBe("/services/data/v62.0/limits");
+		expect(screen.getByLabelText<HTMLInputElement>(/request path/i).value).toBe(
+			"/services/data/v62.0/limits",
+		);
 	});
 
 	it("deletes a single history entry with no confirmation", async () => {

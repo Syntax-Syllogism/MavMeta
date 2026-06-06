@@ -10,7 +10,11 @@ function makeOrg(username: string) {
 const fixedTime = 1_700_000_000_000;
 
 type ServiceOverrides = {
-	scratchOrgCreateFn?: (hubOrg: Org, orgConfig: Record<string, unknown>, durationDays: number) => Promise<{ username?: string; warnings: string[] }>;
+	scratchOrgCreateFn?: (
+		hubOrg: Org,
+		orgConfig: Record<string, unknown>,
+		durationDays: number,
+	) => Promise<{ username?: string; warnings: string[] }>;
 	orgFactory?: (username: string) => Promise<Org>;
 	authInfoFactory?: (username: string) => Promise<{ setAlias: (alias: string) => Promise<void> }>;
 };
@@ -27,7 +31,9 @@ function makeService(overrides: ServiceOverrides = {}) {
 
 describe("ScratchOrgService", () => {
 	let setAliasMock: ReturnType<typeof vi.fn>;
-	let authInfoFactory: NonNullable<ConstructorParameters<typeof ScratchOrgService>[0]>["authInfoFactory"];
+	let authInfoFactory: NonNullable<
+		ConstructorParameters<typeof ScratchOrgService>[0]
+	>["authInfoFactory"];
 
 	beforeEach(() => {
 		setAliasMock = vi.fn().mockResolvedValue(undefined);
@@ -183,7 +189,9 @@ describe("ScratchOrgService", () => {
 
 	it("prunes completed operations that exceed TTL", async () => {
 		let currentTime = fixedTime;
-		const scratchOrgCreateFn = vi.fn().mockResolvedValue({ username: "a@example.com", warnings: [] });
+		const scratchOrgCreateFn = vi
+			.fn()
+			.mockResolvedValue({ username: "a@example.com", warnings: [] });
 
 		const service = new ScratchOrgService({
 			uuidFactory: (() => {
@@ -216,7 +224,7 @@ describe("ScratchOrgService", () => {
 		await expect(service.getStatus("op-1")).rejects.toThrow("op-1");
 	});
 
-	it("listSnapshots maps tooling records when snapshots are enabled", async () => {
+	it("listSnapshots maps records when snapshots are enabled", async () => {
 		const query = vi
 			.fn()
 			.mockResolvedValueOnce({ totalSize: 1, records: [] })
@@ -241,7 +249,7 @@ describe("ScratchOrgService", () => {
 			});
 		const service = makeService({
 			orgFactory: vi.fn().mockResolvedValue({
-				getConnection: vi.fn().mockResolvedValue({ tooling: { query } }),
+				getConnection: vi.fn().mockResolvedValue({ query }),
 			} as unknown as Org),
 		});
 
@@ -274,7 +282,7 @@ describe("ScratchOrgService", () => {
 		});
 		const service = makeService({
 			orgFactory: vi.fn().mockResolvedValue({
-				connection: { tooling: { query } },
+				connection: { query },
 			} as unknown as Org),
 		});
 
@@ -283,14 +291,14 @@ describe("ScratchOrgService", () => {
 		expect(result).toEqual({ eligibility: "not-enabled", snapshots: [] });
 	});
 
-	it("listSnapshots rethrows unrelated Tooling API errors", async () => {
+	it("listSnapshots rethrows unrelated API errors", async () => {
 		const query = vi.fn().mockRejectedValue({
 			errorCode: "INVALID_SESSION_ID",
 			message: "Session expired or invalid",
 		});
 		const service = makeService({
 			orgFactory: vi.fn().mockResolvedValue({
-				connection: { tooling: { query } },
+				connection: { query },
 			} as unknown as Org),
 		});
 
@@ -300,14 +308,14 @@ describe("ScratchOrgService", () => {
 		});
 	});
 
-	it("listSnapshots preserves tooling query method context", async () => {
-		const tooling = {
-			marker: "tooling",
+	it("listSnapshots preserves query method context", async () => {
+		const connectionObj = {
+			marker: "connection",
 			query(this: { marker: string }, statement: string) {
-				if (this.marker !== "tooling") {
+				if (this.marker !== "connection") {
 					throw new Error("query context lost");
 				}
-				if (statement.includes("count()")) {
+				if (statement.includes("LIMIT 1") && !statement.includes("ORDER BY")) {
 					return Promise.resolve({ totalSize: 1, records: [] });
 				}
 				return Promise.resolve({ totalSize: 0, records: [] });
@@ -315,7 +323,7 @@ describe("ScratchOrgService", () => {
 		};
 		const service = makeService({
 			orgFactory: vi.fn().mockResolvedValue({
-				getConnection: vi.fn().mockResolvedValue({ tooling }),
+				getConnection: vi.fn().mockResolvedValue(connectionObj),
 			} as unknown as Org),
 		});
 

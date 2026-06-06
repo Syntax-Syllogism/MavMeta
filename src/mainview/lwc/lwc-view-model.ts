@@ -21,10 +21,7 @@ export function inferLanguageFromPath(path: string): Language {
 	return "unknown";
 }
 
-export function computeDirtyFiles(
-	loaded: LwcFile[],
-	current: Map<string, string>,
-): string[] {
+export function computeDirtyFiles(loaded: LwcFile[], current: Map<string, string>): string[] {
 	return loaded
 		.filter((file) => {
 			const currentSource = current.get(file.filePath);
@@ -55,10 +52,7 @@ export function formatCompileErrors(raw: unknown): LwcCompileError[] {
 				line: typeof r.line === "number" ? r.line : undefined,
 				column: typeof r.column === "number" ? r.column : undefined,
 				message: r.message,
-				severity:
-					r.severity === "warning"
-						? ("warning" as const)
-						: ("error" as const),
+				severity: r.severity === "warning" ? ("warning" as const) : ("error" as const),
 			},
 		];
 	});

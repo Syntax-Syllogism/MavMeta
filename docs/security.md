@@ -39,20 +39,20 @@ The full implementation lives in
 [`notes/work-items/security-concerns.md`](../notes/work-items/security-concerns.md).
 The short version:
 
-| Threat | Mitigation |
-| ------ | ---------- |
-| Drive-by API access from another tab | Per-launch session token in a custom header; strict CORS; CSP |
-| DNS rebinding | Host-header allowlist tied to the active loopback port |
-| Port guessing | Ephemeral port assigned by the OS on each launch |
-| Cross-tab CSRF | Custom header forces a CORS preflight; preflight fails the Origin check |
-| Command injection | argv-form spawn calls only; no `shell: true`; metadata-name regex validation |
-| XXE | No server-side XML parsing — MavMeta emits XML but never consumes it |
-| Zip-slip | ZIP-entry path guard rejects absolute paths, null bytes, and `..` segments |
-| SSRF | `assertSalesforceHost` allowlist on every outbound `instanceUrl` |
-| Token leakage in logs | `redactSecrets` runs on backend logs, frontend `console.*`, and error surfaces |
-| Auth-file corruption | Startup guard refuses to open `~/.sf` or `~/.sfdx` in write mode |
-| Wrong-org deploy | Persistent target-org banner + alias-typing confirmation on non-sandbox |
-| Supply chain | Pinned lockfile, `npm audit` CI gate, Dependabot, CDN-free bundle, CI grep for external URLs |
+| Threat                               | Mitigation                                                                                   |
+| ------------------------------------ | -------------------------------------------------------------------------------------------- |
+| Drive-by API access from another tab | Per-launch session token in a custom header; strict CORS; CSP                                |
+| DNS rebinding                        | Host-header allowlist tied to the active loopback port                                       |
+| Port guessing                        | Ephemeral port assigned by the OS on each launch                                             |
+| Cross-tab CSRF                       | Custom header forces a CORS preflight; preflight fails the Origin check                      |
+| Command injection                    | argv-form spawn calls only; no `shell: true`; metadata-name regex validation                 |
+| XXE                                  | No server-side XML parsing — MavMeta emits XML but never consumes it                         |
+| Zip-slip                             | ZIP-entry path guard rejects absolute paths, null bytes, and `..` segments                   |
+| SSRF                                 | `assertSalesforceHost` allowlist on every outbound `instanceUrl`                             |
+| Token leakage in logs                | `redactSecrets` runs on backend logs, frontend `console.*`, and error surfaces               |
+| Auth-file corruption                 | Startup guard refuses to open `~/.sf` or `~/.sfdx` in write mode                             |
+| Wrong-org deploy                     | Persistent target-org banner + alias-typing confirmation on non-sandbox                      |
+| Supply chain                         | Pinned lockfile, `npm audit` CI gate, Dependabot, CDN-free bundle, CI grep for external URLs |
 
 ## Network Model
 
@@ -60,7 +60,7 @@ The short version:
   `MAVMETA_HOST` that does not resolve to loopback is rejected at
   startup.
 - **Port.** When launched against the served static bundle (`npm
-  start`), the port is requested as `0` and assigned by the OS. The dev
+start`), the port is requested as `0` and assigned by the OS. The dev
   server keeps a fixed port for ergonomics.
 - **Host-header check.** Every request must have a `Host` header
   matching `127.0.0.1:<port>` or `localhost:<port>`. Mismatches return
@@ -138,7 +138,7 @@ following:
 
    The listening socket should be on `127.0.0.1` only.
 
-2. **Confirm the host-header check.**
+1. **Confirm the host-header check.**
 
    ```bash
    curl -i -H 'Host: evil.example.com' http://127.0.0.1:<port>/api/health
@@ -146,7 +146,7 @@ following:
 
    Should return `403 INVALID_HOST`.
 
-3. **Confirm the session-token check.**
+1. **Confirm the session-token check.**
 
    ```bash
    curl -i http://127.0.0.1:<port>/api/orgs
@@ -155,7 +155,7 @@ following:
    Should return `401 INVALID_SESSION` (no `X-MavMeta-Session`
    header).
 
-4. **Confirm there are no outbound calls outside Salesforce.** Run
+1. **Confirm there are no outbound calls outside Salesforce.** Run
    MavMeta with [Little Snitch](https://www.obdev.at/products/littlesnitch/index.html)
    (macOS) or [OpenSnitch](https://github.com/evilsocket/opensnitch)
    (Linux) in "alert" mode. The only outbound destinations should be
@@ -164,14 +164,14 @@ following:
    capture traffic with `tcpdump` or Wireshark and grep the SNI for
    non-Salesforce hostnames — there should be none.
 
-5. **Confirm no inline scripts in the bundle.**
+1. **Confirm no inline scripts in the bundle.**
 
    ```bash
    npm run build
    npm run verify:no-inline-scripts
    ```
 
-6. **Confirm no untrusted outbound URLs in the bundle.** The CI
+1. **Confirm no untrusted outbound URLs in the bundle.** The CI
    workflow runs a `grep` job over `dist/` that fails on any
    `https://` URL outside the Salesforce allowlist; you can run the
    same locally.

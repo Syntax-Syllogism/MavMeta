@@ -8,12 +8,7 @@ const SECRET_KEY_PATTERN =
 	/(accesstoken|access_token|access-token|refreshtoken|refresh_token|refresh-token|sessionid|session_id|session-id|sessiontoken|session_token|session-token|clientsecret|client_secret|client-secret|consumersecret|consumer_secret|consumer-secret)/i;
 
 export function installRedactingConsole(): void {
-	const targets: Array<"log" | "info" | "warn" | "error"> = [
-		"log",
-		"info",
-		"warn",
-		"error",
-	];
+	const targets: Array<"log" | "info" | "warn" | "error"> = ["log", "info", "warn", "error"];
 	for (const method of targets) {
 		const original = console[method].bind(console);
 		console[method] = (...args: unknown[]) => {

@@ -15,6 +15,7 @@ import type {
 	SetAliasRequest,
 } from "../shared/org";
 import { ActiveOrgStore, type ActiveOrgStoreApi } from "./active-org-store";
+import { ApiError } from "./api-error";
 import { openInSystemBrowser } from "./system-browser";
 
 export type OrgServiceApi = {
@@ -29,29 +30,37 @@ export type OrgServiceApi = {
 	deleteScratchOrg(target: OrgTarget): Promise<OrgActionResponse>;
 };
 
+type OrgInfo = {
+	isSandbox: boolean;
+	trialExpirationDate: string | undefined;
+};
+
 export class OrgService implements OrgServiceApi {
-	private readonly trialExpirationCache = new Map<string, {
-		value: string | undefined;
-		expiresAt: number;
-	}>();
-	private readonly trialExpirationInflight = new Map<string, Promise<string | undefined>>();
-	private readonly trialExpirationCacheTtlMs: number;
+	private oauthInFlight = false;
+	private readonly orgInfoCache = new Map<
+		string,
+		{
+			value: OrgInfo;
+			expiresAt: number;
+		}
+	>();
+	private readonly orgInfoInflight = new Map<string, Promise<OrgInfo>>();
+	private readonly orgInfoCacheTtlMs: number;
 
 	constructor(
 		private readonly activeOrgStore: ActiveOrgStoreApi = new ActiveOrgStore(),
-		options?: { trialExpirationCacheTtlMs?: number },
+		options?: { orgInfoCacheTtlMs?: number },
 	) {
-		this.trialExpirationCacheTtlMs = options?.trialExpirationCacheTtlMs ?? 5 * 60 * 1000;
+		this.orgInfoCacheTtlMs = options?.orgInfoCacheTtlMs ?? 5 * 60 * 1000;
 	}
 
-async listOrgs(): Promise<OrgListResponse> {
+	async listOrgs(): Promise<OrgListResponse> {
 		const authorizations = await AuthInfo.listAllAuthorizations();
-		const orgs = (await Promise.all(
-			authorizations.map((authorization) => this.toOrgSummary(authorization)),
-		))
-			.sort((left, right) =>
-				(left.alias ?? left.username).localeCompare(right.alias ?? right.username),
-			);
+		const orgs = (
+			await Promise.all(authorizations.map((authorization) => this.toOrgSummary(authorization)))
+		).sort((left, right) =>
+			(left.alias ?? left.username).localeCompare(right.alias ?? right.username),
+		);
 		const activeUsername = this.resolveActiveUsername(orgs);
 		const activeOrg = activeUsername
 			? orgs.find((org) => org.username === activeUsername)
@@ -142,12 +151,17 @@ async listOrgs(): Promise<OrgListResponse> {
 		const isScratch = await org.determineIfScratch();
 
 		if (!isScratch) {
-			throw new Error(
-				`Only scratch orgs can be deleted. ${target.username} is not a scratch org.`,
-			);
+			throw new Error(`Only scratch orgs can be deleted. ${target.username} is not a scratch org.`);
 		}
 
-		await org.delete();
+		try {
+			await org.delete();
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			if (!message.includes("expired or deleted")) {
+				throw error;
+			}
+		}
 
 		if (this.activeOrgStore.getActiveUsername() === target.username) {
 			this.activeOrgStore.clear();
@@ -174,31 +188,47 @@ async listOrgs(): Promise<OrgListResponse> {
 		usernameHint?: string;
 		alias?: string;
 	}): Promise<OrgActionResponse> {
-		const oauthServer = await WebOAuthServer.create({
-			oauthConfig: {
-				loginUrl: normalizeLoginUrl(options.loginUrl ?? ""),
-			},
-		});
-
-		await oauthServer.start();
-		await openInSystemBrowser(oauthServer.getAuthorizationUrl());
-
-		const authInfo = await oauthServer.authorizeAndSave();
-		if (options.alias?.trim()) {
-			await authInfo.setAlias(options.alias.trim());
+		if (this.oauthInFlight) {
+			throw new ApiError(
+				409,
+				"AUTH_IN_PROGRESS",
+				"An org authorization is already in progress. Finish the browser login or wait for it to time out before starting another.",
+			);
 		}
 
-		const username = authInfo.getUsername();
-		this.activeOrgStore.setActiveUsername(username);
+		this.oauthInFlight = true;
 
-		const messagePrefix = options.usernameHint
-			? `${options.usernameHint} reauthorized as ${username}`
-			: `${username} authenticated`;
+		try {
+			const oauthServer = await WebOAuthServer.create({
+				oauthConfig: {
+					loginUrl: normalizeLoginUrl(options.loginUrl ?? ""),
+				},
+			});
 
-		return {
-			org: await this.getOrg(username),
-			message: `${messagePrefix}.`,
-		};
+			await oauthServer.start();
+			await openInSystemBrowser(oauthServer.getAuthorizationUrl());
+
+			const authInfo = await oauthServer.authorizeAndSave();
+			if (options.alias?.trim()) {
+				await authInfo.setAlias(options.alias.trim());
+			}
+
+			const username = authInfo.getUsername();
+			this.activeOrgStore.setActiveUsername(username);
+
+			const messagePrefix = options.usernameHint
+				? `${options.usernameHint} reauthorized as ${username}`
+				: `${username} authenticated`;
+
+			return {
+				org: await this.getOrg(username),
+				message: `${messagePrefix}.`,
+			};
+		} catch (error) {
+			throw toAuthApiError(error);
+		} finally {
+			this.oauthInFlight = false;
+		}
 	}
 
 	private resolveActiveUsername(orgs: OrgSummary[]): string | undefined {
@@ -221,77 +251,70 @@ async listOrgs(): Promise<OrgListResponse> {
 	}
 
 	private async toOrgSummary(authorization: OrgAuthorization): Promise<OrgSummary> {
-		if (!authorization.isScratchOrg) {
-			return toOrgSummary(authorization);
-		}
-		const trialExpirationDate = await this.lookupTrialExpirationDate(authorization.username);
-		return toOrgSummary(authorization, trialExpirationDate);
+		const orgInfo = await this.lookupOrgInfo(authorization.username);
+		return toOrgSummary(authorization, orgInfo);
 	}
 
-	private async lookupTrialExpirationDate(username: string): Promise<string | undefined> {
+	private async lookupOrgInfo(username: string): Promise<OrgInfo> {
 		const now = Date.now();
-		const cached = this.trialExpirationCache.get(username);
+		const cached = this.orgInfoCache.get(username);
 		if (cached && cached.expiresAt > now) {
 			return cached.value;
 		}
 
-		const inflight = this.trialExpirationInflight.get(username);
+		const inflight = this.orgInfoInflight.get(username);
 		if (inflight) {
 			return inflight;
 		}
 
 		const fetchPromise = (async () => {
 			try {
-			const org = await Org.create({ aliasOrUsername: username });
-			const connection = org.getConnection();
-			const response = await (
-				connection.query(
-					"SELECT TrialExpirationDate FROM Organization",
+				const org = await Org.create({ aliasOrUsername: username });
+				const connection = org.getConnection();
+				const response = await (connection.query(
+					"SELECT IsSandbox, TrialExpirationDate FROM Organization",
 				) as unknown as Promise<{
-					records?: Array<{ TrialExpirationDate?: string | null }>;
-				}>
-			);
-				const value = response.records?.[0]?.TrialExpirationDate;
-				const normalized =
-					typeof value === "string" && value.trim() ? value : undefined;
-				this.trialExpirationCache.set(username, {
-					value: normalized,
-					expiresAt: Date.now() + this.trialExpirationCacheTtlMs,
-				});
-				return normalized;
+					records?: Array<{ IsSandbox?: boolean | null; TrialExpirationDate?: string | null }>;
+				}>);
+				const record = response.records?.[0];
+				const trialExpirationDate =
+					typeof record?.TrialExpirationDate === "string" && record.TrialExpirationDate.trim()
+						? record.TrialExpirationDate
+						: undefined;
+				const value: OrgInfo = {
+					isSandbox: record?.IsSandbox === true,
+					trialExpirationDate,
+				};
+				this.orgInfoCache.set(username, { value, expiresAt: Date.now() + this.orgInfoCacheTtlMs });
+				return value;
 			} catch {
-				this.trialExpirationCache.set(username, {
-					value: undefined,
-					expiresAt: Date.now() + this.trialExpirationCacheTtlMs,
-				});
-				return undefined;
+				const value: OrgInfo = { isSandbox: false, trialExpirationDate: undefined };
+				this.orgInfoCache.set(username, { value, expiresAt: Date.now() + this.orgInfoCacheTtlMs });
+				return value;
 			} finally {
-				this.trialExpirationInflight.delete(username);
+				this.orgInfoInflight.delete(username);
 			}
 		})();
 
-		this.trialExpirationInflight.set(username, fetchPromise);
+		this.orgInfoInflight.set(username, fetchPromise);
 
 		return fetchPromise;
 	}
 }
 
-function toOrgSummary(
-	authorization: OrgAuthorization,
-	trialExpirationDate?: string,
-): OrgSummary {
+function toOrgSummary(authorization: OrgAuthorization, orgInfo?: OrgInfo): OrgSummary {
 	return {
 		alias: authorization.aliases?.[0] ?? undefined,
 		username: authorization.username,
 		orgId: authorization.orgId,
 		instanceUrl: authorization.instanceUrl,
-		...(trialExpirationDate ? { trialExpirationDate } : {}),
+		...(orgInfo?.trialExpirationDate ? { trialExpirationDate: orgInfo.trialExpirationDate } : {}),
 		environment: authorization.isScratchOrg
 			? "scratch"
-			: authorization.isSandbox
+			: orgInfo?.isSandbox && !orgInfo.trialExpirationDate
 				? "sandbox"
 				: authorization.isDevHub
-					? "developer"
+					? "dev-hub"
 					: "production",
 		isDefault:
 			authorization.configs?.includes("target-org") === true ||
@@ -310,14 +333,32 @@ function normalizeLoginUrl(loginUrl: string): string {
 	if (!trimmedLoginUrl) {
 		return "https://login.salesforce.com";
 	}
-	if (
-		trimmedLoginUrl.startsWith("http://") ||
-		trimmedLoginUrl.startsWith("https://")
-	) {
+	if (trimmedLoginUrl.startsWith("http://") || trimmedLoginUrl.startsWith("https://")) {
 		return trimmedLoginUrl;
 	}
 
 	return `https://${trimmedLoginUrl}`;
+}
+
+function toAuthApiError(error: unknown): unknown {
+	if (error instanceof ApiError) {
+		return error;
+	}
+	if (isOauthPortInUseError(error)) {
+		return new ApiError(
+			409,
+			"AUTH_PORT_IN_USE",
+			"Salesforce OAuth could not start because localhost port 1717 is already in use. Close any other Salesforce CLI auth window/process using that port, then try Auth Org again.",
+		);
+	}
+	return error;
+}
+
+function isOauthPortInUseError(error: unknown): boolean {
+	return (
+		error instanceof Error &&
+		error.message.includes("Cannot start the OAuth redirect server on port 1717")
+	);
 }
 
 function withStartPath(frontDoorUrl: string, startPath?: string): string {

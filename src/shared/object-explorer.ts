@@ -5,7 +5,9 @@ export type ObjectType =
 	| "custom"
 	| "customMetadata"
 	| "platformEvent"
-	| "customSetting";
+	| "customSetting"
+	| "bigObject"
+	| "externalObject";
 
 export type ObjectSummary = {
 	apiName: string;
@@ -22,6 +24,19 @@ export type ListObjectsRequest = {
 export type ListObjectsResponse = {
 	target: OrgTarget;
 	objects: ObjectSummary[];
+};
+
+export type ListObjectsPageRequest = {
+	target: OrgTarget;
+	cursor?: string;
+	search?: string;
+	limit?: number;
+};
+
+export type ListObjectsPageResponse = {
+	target: OrgTarget;
+	objects: ObjectSummary[];
+	nextCursor?: string;
 };
 
 export type ChildMetadataItem = {
@@ -58,7 +73,6 @@ export const OBJECT_CHILD_METADATA_TYPES = [
 	"WebLink",
 	"BusinessProcess",
 	"SharingReason",
-	"SharingRecalculation",
 ] as const;
 
 export type ObjectChildMetadataType = (typeof OBJECT_CHILD_METADATA_TYPES)[number];
@@ -73,5 +87,4 @@ export const CHILD_CATEGORY_LABELS: Record<string, string> = {
 	WebLink: "Buttons, Links & Actions",
 	BusinessProcess: "Business Processes",
 	SharingReason: "Sharing Reasons",
-	SharingRecalculation: "Sharing Recalculations",
 };

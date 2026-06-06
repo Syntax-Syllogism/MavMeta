@@ -26,11 +26,7 @@ export type CompareDiffLine = {
 	kind: "context" | "remove" | "add" | "change";
 };
 
-export function toStagedItemId(
-	orgUsername: string,
-	metadataType: string,
-	fullName: string,
-) {
+export function toStagedItemId(orgUsername: string, metadataType: string, fullName: string) {
 	return `${orgUsername}::${metadataType}::${fullName.toLowerCase()}`;
 }
 
@@ -43,21 +39,23 @@ export function buildStagedItemGroups(stagedItems: StagedItem[]) {
 			return groups;
 		}, new Map<string, StagedItem[]>()),
 	)
-		.map(([metadataType, items]): StagedItemGroup => ({
-			metadataType,
-			items: items.toSorted((left, right) =>
-				left.fullName.localeCompare(right.fullName),
-			),
-		}))
+		.map(
+			([metadataType, items]): StagedItemGroup => ({
+				metadataType,
+				items: items.toSorted((left, right) => left.fullName.localeCompare(right.fullName)),
+			}),
+		)
 		.sort((left, right) => left.metadataType.localeCompare(right.metadataType));
 }
 
 export function countStagedItemsByMetadataType(stagedItems: StagedItem[]) {
 	return Array.from(
-		stagedItems.reduce((counts, item) => {
-			counts.set(item.metadataType, (counts.get(item.metadataType) ?? 0) + 1);
-			return counts;
-		}, new Map<string, number>()).entries(),
+		stagedItems
+			.reduce((counts, item) => {
+				counts.set(item.metadataType, (counts.get(item.metadataType) ?? 0) + 1);
+				return counts;
+			}, new Map<string, number>())
+			.entries(),
 	)
 		.map(([metadataType, count]) => ({ metadataType, count }))
 		.sort((left, right) => left.metadataType.localeCompare(right.metadataType));
@@ -79,10 +77,7 @@ export function hasMixedSourceOrgs(stagedItems: StagedItem[]) {
 	return stagedItems.length > 1 && deriveSingleSourceOrgUsername(stagedItems) === undefined;
 }
 
-export function listEligibleTargetOrgs(
-	orgs: OrgSummary[],
-	sourceOrgUsername: string | undefined,
-) {
+export function listEligibleTargetOrgs(orgs: OrgSummary[], sourceOrgUsername: string | undefined) {
 	return orgs.filter(
 		(org) =>
 			org.authStatus === "connected" &&

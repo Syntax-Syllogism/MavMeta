@@ -11,6 +11,7 @@ artifacts/
 bin/
 build/
 deep-dive/
+docs/smoke-reports
 dist/
 memory/
 node_modules/

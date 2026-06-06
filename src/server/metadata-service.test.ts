@@ -89,7 +89,9 @@ describe("MetadataService", () => {
 				},
 			};
 			vi.mocked(JSZip.loadAsync).mockResolvedValue(mockZip as any);
-			mockRetrieveLocator.complete.mockResolvedValue({ zipFile: Buffer.from("zip").toString("base64") });
+			mockRetrieveLocator.complete.mockResolvedValue({
+				zipFile: Buffer.from("zip").toString("base64"),
+			});
 
 			await service.getComponentSource({
 				target: { username: "user@example.com" },
@@ -104,7 +106,9 @@ describe("MetadataService", () => {
 			const { default: JSZip } = await import("jszip");
 			// Zip has no matching file for "MyObject"
 			vi.mocked(JSZip.loadAsync).mockResolvedValue({ files: {} } as any);
-			mockRetrieveLocator.complete.mockResolvedValue({ zipFile: Buffer.from("zip").toString("base64") });
+			mockRetrieveLocator.complete.mockResolvedValue({
+				zipFile: Buffer.from("zip").toString("base64"),
+			});
 
 			mockConnection.metadata.read.mockResolvedValue({
 				fullName: "MyObject",
@@ -134,7 +138,9 @@ describe("MetadataService", () => {
 				},
 			};
 			vi.mocked(JSZip.loadAsync).mockResolvedValue(mockZip as any);
-			mockRetrieveLocator.complete.mockResolvedValue({ zipFile: Buffer.from("zip").toString("base64") });
+			mockRetrieveLocator.complete.mockResolvedValue({
+				zipFile: Buffer.from("zip").toString("base64"),
+			});
 			mockConnection.metadata.read.mockResolvedValue({
 				fullName: "MyObject",
 				description: "safe fallback",
@@ -176,7 +182,9 @@ describe("MetadataService", () => {
 				},
 			};
 			vi.mocked(JSZip.loadAsync).mockResolvedValue(mockZip as any);
-			mockRetrieveLocator.complete.mockResolvedValue({ zipFile: Buffer.from("zip").toString("base64") });
+			mockRetrieveLocator.complete.mockResolvedValue({
+				zipFile: Buffer.from("zip").toString("base64"),
+			});
 
 			const request = {
 				target: { username: "user@example.com" },
@@ -198,7 +206,7 @@ describe("MetadataService", () => {
 		it("correctly reports truncated=true for cached entries that were truncated", async () => {
 			const { default: JSZip } = await import("jszip");
 			// Generate content > 1000 lines
-			const longContent = Array.from({ length: 1100 }, (_, i) => `line ${i}`).join('\n');
+			const longContent = Array.from({ length: 1100 }, (_, i) => `line ${i}`).join("\n");
 			const mockZip = {
 				files: {
 					"MyClass.cls-meta.xml": {
@@ -208,7 +216,9 @@ describe("MetadataService", () => {
 				},
 			};
 			vi.mocked(JSZip.loadAsync).mockResolvedValue(mockZip as any);
-			mockRetrieveLocator.complete.mockResolvedValue({ zipFile: Buffer.from("zip").toString("base64") });
+			mockRetrieveLocator.complete.mockResolvedValue({
+				zipFile: Buffer.from("zip").toString("base64"),
+			});
 
 			const request = {
 				target: { username: "user@example.com" },
@@ -288,20 +298,34 @@ describe("MetadataService", () => {
 			vi.mocked(JSZip.loadAsync)
 				.mockResolvedValueOnce({
 					files: {
-						"myBundle.js-source.js-meta.xml": { dir: false, async: vi.fn().mockResolvedValue("const one = 1;") },
+						"myBundle.js-source.js-meta.xml": {
+							dir: false,
+							async: vi.fn().mockResolvedValue("const one = 1;"),
+						},
 					},
 				} as any)
 				.mockResolvedValueOnce({
 					files: {
-						"myBundle.js-target.js-meta.xml": { dir: false, async: vi.fn().mockResolvedValue("const one = 2;") },
+						"myBundle.js-target.js-meta.xml": {
+							dir: false,
+							async: vi.fn().mockResolvedValue("const one = 2;"),
+						},
 					},
 				} as any);
-			mockRetrieveLocator.complete.mockResolvedValue({ zipFile: Buffer.from("zip").toString("base64") });
+			mockRetrieveLocator.complete.mockResolvedValue({
+				zipFile: Buffer.from("zip").toString("base64"),
+			});
 
 			const result = await service.getCrossOrgComponentDiff({
 				source: { username: "source@example.com" },
 				target: { username: "target@example.com" },
-				components: [{ metadataType: "LightningComponentBundle", fullName: "c:myBundle", fileName: "myBundle.js" }],
+				components: [
+					{
+						metadataType: "LightningComponentBundle",
+						fullName: "c:myBundle",
+						fileName: "myBundle.js",
+					},
+				],
 			});
 
 			expect(result.results[0]?.fileName).toBe("myBundle.js");
@@ -312,15 +336,23 @@ describe("MetadataService", () => {
 			vi.mocked(JSZip.loadAsync)
 				.mockResolvedValueOnce({
 					files: {
-						"MyClass-source.cls-meta.xml": { dir: false, async: vi.fn().mockResolvedValue("<ApexClass>\r\n<body>1</body>\r\n</ApexClass>\r\n") },
+						"MyClass-source.cls-meta.xml": {
+							dir: false,
+							async: vi.fn().mockResolvedValue("<ApexClass>\r\n<body>1</body>\r\n</ApexClass>\r\n"),
+						},
 					},
 				} as any)
 				.mockResolvedValueOnce({
 					files: {
-						"MyClass-target.cls-meta.xml": { dir: false, async: vi.fn().mockResolvedValue("<ApexClass>\n<body>1</body>\n</ApexClass>") },
+						"MyClass-target.cls-meta.xml": {
+							dir: false,
+							async: vi.fn().mockResolvedValue("<ApexClass>\n<body>1</body>\n</ApexClass>"),
+						},
 					},
 				} as any);
-			mockRetrieveLocator.complete.mockResolvedValue({ zipFile: Buffer.from("zip").toString("base64") });
+			mockRetrieveLocator.complete.mockResolvedValue({
+				zipFile: Buffer.from("zip").toString("base64"),
+			});
 
 			const result = await service.getCrossOrgComponentDiff({
 				source: { username: "source@example.com" },
@@ -336,15 +368,23 @@ describe("MetadataService", () => {
 			vi.mocked(JSZip.loadAsync)
 				.mockResolvedValueOnce({
 					files: {
-						"MyClass-source.cls-meta.xml": { dir: false, async: vi.fn().mockResolvedValue("<ApexClass><body>1</body></ApexClass>") },
+						"MyClass-source.cls-meta.xml": {
+							dir: false,
+							async: vi.fn().mockResolvedValue("<ApexClass><body>1</body></ApexClass>"),
+						},
 					},
 				} as any)
 				.mockResolvedValueOnce({
 					files: {
-						"MyClass-target.cls-meta.xml": { dir: false, async: vi.fn().mockResolvedValue("<ApexClass><body>2</body></ApexClass>") },
+						"MyClass-target.cls-meta.xml": {
+							dir: false,
+							async: vi.fn().mockResolvedValue("<ApexClass><body>2</body></ApexClass>"),
+						},
 					},
 				} as any);
-			mockRetrieveLocator.complete.mockResolvedValue({ zipFile: Buffer.from("zip").toString("base64") });
+			mockRetrieveLocator.complete.mockResolvedValue({
+				zipFile: Buffer.from("zip").toString("base64"),
+			});
 
 			const result = await service.getCrossOrgComponentDiff({
 				source: { username: "source@example.com" },

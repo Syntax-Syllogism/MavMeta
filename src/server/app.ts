@@ -10,14 +10,27 @@ import { ApiError } from "./api-error";
 import { LwcService, type LwcServiceApi } from "./lwc-service";
 import { MetadataService, type MetadataServiceApi } from "./metadata-service";
 import { ObjectExplorerService, type ObjectExplorerServiceApi } from "./object-explorer-service";
+import { FieldAccessService, type FieldAccessServiceApi } from "./field-access-service";
 import { OrgService, type OrgServiceApi } from "./org-service";
 import { RestService, type RestServiceApi } from "./rest-service";
+import { SoqlService, type SoqlServiceApi } from "./soql-service";
 import { ScratchOrgService, type ScratchOrgServiceApi } from "./scratch-org-service";
 import { validateMetadataName } from "./metadata-name";
 import { redactSecrets } from "./redact-secrets";
 import type { CrossOrgDiffRequest, GetComponentSourceRequest } from "../shared/metadata";
 import type { RestExecuteRequest } from "../shared/rest";
 import type { DeployLwcBundleRequest } from "../shared/lwc";
+import type {
+	BulkQueryResultRequest,
+	BulkQueryStatusRequest,
+	DescribeGlobalRequest,
+	DescribeObjectRequest,
+	RunQueryRequest,
+	SoqlApiType,
+	StartBulkQueryRequest,
+	ValidateQueryRequest,
+} from "../shared/soql";
+import type { FieldAccessRequest } from "../shared/field-access";
 
 type ErrorPayload = {
 	code: string;
@@ -28,8 +41,10 @@ type CreateAppOptions = {
 	orgService?: OrgServiceApi;
 	metadataService?: MetadataServiceApi;
 	objectExplorerService?: ObjectExplorerServiceApi;
+	fieldAccessService?: FieldAccessServiceApi;
 	deployService?: DeployServiceApi;
 	restService?: RestServiceApi;
+	soqlService?: SoqlServiceApi;
 	scratchOrgService?: ScratchOrgServiceApi;
 	lwcService?: LwcServiceApi;
 	serveStatic?: boolean;
@@ -41,7 +56,8 @@ type CreateAppOptions = {
 };
 
 const SECURITY_HEADERS: Record<string, string> = {
-	"content-security-policy": "default-src 'self'; connect-src 'self' https://*.salesforce.com https://*.force.com https://*.lightning.force.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
+	"content-security-policy":
+		"default-src 'self'; connect-src 'self' https://*.salesforce.com https://*.force.com https://*.lightning.force.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
 	"x-content-type-options": "nosniff",
 	"x-frame-options": "DENY",
 	"referrer-policy": "no-referrer",
@@ -57,8 +73,10 @@ export function createApp(options: CreateAppOptions = {}) {
 	const orgService = options.orgService ?? new OrgService();
 	const metadataService = options.metadataService ?? new MetadataService();
 	const objectExplorerService = options.objectExplorerService ?? new ObjectExplorerService();
+	const fieldAccessService = options.fieldAccessService ?? new FieldAccessService();
 	const deployService = options.deployService ?? new DeployService();
 	const restService = options.restService ?? new RestService();
+	const soqlService = options.soqlService ?? new SoqlService();
 	const scratchOrgService = options.scratchOrgService ?? new ScratchOrgService();
 	const lwcService = options.lwcService ?? new LwcService();
 	const sessionToken = options.sessionToken ?? randomBytes(32).toString("hex");
@@ -98,11 +116,7 @@ export function createApp(options: CreateAppOptions = {}) {
 		if (!request.url.startsWith("/api/")) {
 			return;
 		}
-		if (
-			allowDevSessionBootstrap &&
-			request.method === "GET" &&
-			request.url === "/api/session"
-		) {
+		if (allowDevSessionBootstrap && request.method === "GET" && request.url === "/api/session") {
 			// CSRF defense for dev bootstrap:
 			// browser clients must send a custom header, which triggers CORS preflight,
 			// and when Origin is present it must be allowlisted.
@@ -115,7 +129,9 @@ export function createApp(options: CreateAppOptions = {}) {
 		}
 
 		if (!hasMatchingSessionToken(request.headers["x-mavmeta-session"], tokenBuffer)) {
-			reply.code(401).send({ code: "INVALID_SESSION", message: "Invalid or missing session token." });
+			reply
+				.code(401)
+				.send({ code: "INVALID_SESSION", message: "Invalid or missing session token." });
 			return;
 		}
 	});
@@ -172,13 +188,12 @@ export function createApp(options: CreateAppOptions = {}) {
 		const payload: ErrorPayload = {
 			code: error instanceof ApiError ? error.code : "INTERNAL_ERROR",
 			message:
-				error instanceof Error
-					? redactSecrets(error.message)
-					: "Unexpected backend failure.",
+				error instanceof Error ? redactSecrets(error.message) : "Unexpected backend failure.",
 		};
 
 		if (statusCode >= 500) {
-			const safeErrorMessage = error instanceof Error ? redactSecrets(error.message) : "Unexpected backend failure.";
+			const safeErrorMessage =
+				error instanceof Error ? redactSecrets(error.message) : "Unexpected backend failure.";
 			request.log.error({ err: { message: safeErrorMessage } }, "Internal server error");
 		}
 
@@ -198,9 +213,7 @@ export function createApp(options: CreateAppOptions = {}) {
 	app.post("/api/orgs/reauth", async (request) =>
 		orgService.reauthOrg(readOrgTarget(request.body)),
 	);
-	app.post("/api/orgs/open", async (request) =>
-		orgService.openOrg(readOrgTarget(request.body)),
-	);
+	app.post("/api/orgs/open", async (request) => orgService.openOrg(readOrgTarget(request.body)));
 	app.post("/api/orgs/logout", async (request) =>
 		orgService.logoutOrg(readOrgTarget(request.body)),
 	);
@@ -218,32 +231,30 @@ export function createApp(options: CreateAppOptions = {}) {
 		metadataService.listMetadataTypes(readListMetadataTypesRequest(request.body)),
 	);
 	app.post("/api/metadata/components", async (request) =>
-		metadataService.listMetadataComponents(
-			readListMetadataComponentsRequest(request.body),
-		),
+		metadataService.listMetadataComponents(readListMetadataComponentsRequest(request.body)),
 	);
 	app.post("/api/metadata/component-source", async (request) =>
-		metadataService.getComponentSource(
-			readGetComponentSourceRequest(request.body),
-		),
+		metadataService.getComponentSource(readGetComponentSourceRequest(request.body)),
 	);
 	app.post("/api/metadata/diff", async (request) =>
-		metadataService.getCrossOrgComponentDiff(
-			readCrossOrgDiffRequest(request.body),
-		),
+		metadataService.getCrossOrgComponentDiff(readCrossOrgDiffRequest(request.body)),
 	);
 
 	app.post("/api/objects/list", async (request) =>
 		objectExplorerService.listObjects(readOrgTargetRequest(request.body)),
 	);
+	app.post("/api/objects/list-page", async (request) =>
+		objectExplorerService.listObjectsPage(readListObjectsPageRequest(request.body)),
+	);
 	app.post("/api/objects/children", async (request) =>
 		objectExplorerService.listObjectChildren(readListObjectChildrenRequest(request.body)),
 	);
+	app.post("/api/fields/access", async (request) =>
+		fieldAccessService.resolve(readFieldAccessRequest(request.body)),
+	);
 
 	app.post("/api/deploy/start", async (request) =>
-		deployService.startDestructiveDeploy(
-			readStartDestructiveDeployRequest(request.body),
-		),
+		deployService.startDestructiveDeploy(readStartDestructiveDeployRequest(request.body)),
 	);
 	app.post("/api/deploy/status", async (request) =>
 		deployService.getDestructiveDeployStatus(
@@ -272,6 +283,28 @@ export function createApp(options: CreateAppOptions = {}) {
 	app.post("/api/rest/execute", async (request) =>
 		restService.executeRequest(readRestExecuteRequest(request.body)),
 	);
+	app.post("/api/soql/describe-global", async (request) =>
+		soqlService.describeGlobal(readSoqlDescribeGlobalRequest(request.body)),
+	);
+	app.post("/api/soql/describe-object", async (request) =>
+		soqlService.describeObject(readSoqlDescribeObjectRequest(request.body)),
+	);
+	app.post("/api/soql/validate", async (request) =>
+		soqlService.validateQuery(readSoqlValidateRequest(request.body)),
+	);
+	app.post("/api/soql/run", async (request) =>
+		soqlService.runQuery(readSoqlRunRequest(request.body)),
+	);
+	app.post("/api/soql/bulk/start", async (request) =>
+		soqlService.startBulkQuery(readSoqlBulkStartRequest(request.body)),
+	);
+	app.post("/api/soql/bulk/status", async (request) =>
+		soqlService.getBulkQueryStatus(readSoqlBulkStatusRequest(request.body)),
+	);
+	app.get("/api/soql/bulk/result", async (request, reply) => {
+		const csv = await soqlService.getBulkQueryResult(readSoqlBulkResultRequest(request.query));
+		return reply.type("text/csv; charset=utf-8").send(csv);
+	});
 
 	app.post("/api/lwc/bundles/list", async (request) =>
 		lwcService.listBundles(readLwcListBundlesRequest(request.body)),
@@ -383,35 +416,38 @@ function readStringField(
 
 	if (value === undefined || value === null) {
 		if (options.required) {
-			throw new ApiError(
-				400,
-				"INVALID_REQUEST",
-				`Missing required field "${fieldName}".`,
-			);
+			throw new ApiError(400, "INVALID_REQUEST", `Missing required field "${fieldName}".`);
 		}
 		return undefined;
 	}
 
 	if (typeof value !== "string" || !value.trim()) {
-		throw new ApiError(
-			400,
-			"INVALID_REQUEST",
-			`Field "${fieldName}" must be a non-empty string.`,
-		);
+		throw new ApiError(400, "INVALID_REQUEST", `Field "${fieldName}" must be a non-empty string.`);
 	}
 
 	return value.trim();
+}
+
+function readOptionalStringField(
+	body: Record<string, unknown>,
+	fieldName: string,
+): string | undefined {
+	const value = body[fieldName];
+
+	if (value === undefined || value === null) {
+		return undefined;
+	}
+	if (typeof value !== "string") {
+		throw new ApiError(400, "INVALID_REQUEST", `Field "${fieldName}" must be a string.`);
+	}
+	return value.trim() || undefined;
 }
 
 function readOrgTarget(body: unknown): { username: string; startPath?: string } {
 	const objectBody = readObjectBody(body);
 	const startPath = readStringField(objectBody, "startPath");
 	if (startPath && !startPath.startsWith("/")) {
-		throw new ApiError(
-			400,
-			"INVALID_REQUEST",
-			'Field "startPath" must start with "/".',
-		);
+		throw new ApiError(400, "INVALID_REQUEST", 'Field "startPath" must start with "/".');
 	}
 	return {
 		username: readStringField(objectBody, "username", { required: true }) as string,
@@ -422,8 +458,7 @@ function readOrgTarget(body: unknown): { username: string; startPath?: string } 
 function readAuthOrgRequest(body: unknown): { loginUrl: string; alias?: string } {
 	const objectBody = readObjectBody(body);
 	return {
-		loginUrl:
-			readStringField(objectBody, "loginUrl", { required: true }) ?? "",
+		loginUrl: readStringField(objectBody, "loginUrl", { required: true }) ?? "",
 		alias: readStringField(objectBody, "alias"),
 	};
 }
@@ -475,8 +510,7 @@ function readListMetadataComponentsRequest(body: unknown): {
 				required: true,
 			}) as string,
 		},
-		metadataType:
-			readStringField(objectBody, "metadataType", { required: true }) ?? "",
+		metadataType: readStringField(objectBody, "metadataType", { required: true }) ?? "",
 		folder: readStringField(objectBody, "folder"),
 		search: readStringField(objectBody, "search"),
 	};
@@ -493,20 +527,12 @@ function readStartDestructiveDeployRequest(body: unknown): {
 		required: true,
 	}) as string;
 	if (mode !== "validate" && mode !== "deploy") {
-		throw new ApiError(
-			400,
-			"INVALID_REQUEST",
-			'Field "mode" must be "validate" or "deploy".',
-		);
+		throw new ApiError(400, "INVALID_REQUEST", 'Field "mode" must be "validate" or "deploy".');
 	}
 
 	const componentsValue = objectBody.components;
 	if (!Array.isArray(componentsValue)) {
-		throw new ApiError(
-			400,
-			"INVALID_REQUEST",
-			'Field "components" must be an array.',
-		);
+		throw new ApiError(400, "INVALID_REQUEST", 'Field "components" must be an array.');
 	}
 
 	const components = componentsValue.map((component, index) => {
@@ -570,11 +596,7 @@ function readStartCrossOrgDeployRequest(body: unknown): {
 	const targetBody = readObjectBody(objectBody.target);
 	const mode = readStringField(objectBody, "mode", { required: true }) as string;
 	if (mode !== "validate" && mode !== "deploy") {
-		throw new ApiError(
-			400,
-			"INVALID_REQUEST",
-			'Field "mode" must be "validate" or "deploy".',
-		);
+		throw new ApiError(400, "INVALID_REQUEST", 'Field "mode" must be "validate" or "deploy".');
 	}
 	const componentsValue = objectBody.components;
 	if (!Array.isArray(componentsValue)) {
@@ -622,7 +644,11 @@ function readRestExecuteRequest(body: unknown): RestExecuteRequest {
 	const path = readStringField(objectBody, "path", { required: true }) as string;
 
 	if (!["GET", "POST", "PATCH", "DELETE"].includes(methodRaw)) {
-		throw new ApiError(400, "INVALID_REQUEST", 'Field "method" must be GET, POST, PATCH, or DELETE.');
+		throw new ApiError(
+			400,
+			"INVALID_REQUEST",
+			'Field "method" must be GET, POST, PATCH, or DELETE.',
+		);
 	}
 
 	const method = methodRaw as RestExecuteRequest["method"];
@@ -640,9 +666,113 @@ function readRestExecuteRequest(body: unknown): RestExecuteRequest {
 	return { username, method, path, headers, body: bodyText };
 }
 
+function readSoqlApi(body: Record<string, unknown>): SoqlApiType {
+	const api = readStringField(body, "api", { required: true });
+	if (api !== "rest" && api !== "tooling") {
+		throw new ApiError(400, "INVALID_REQUEST", 'Field "api" must be "rest" or "tooling".');
+	}
+	return api;
+}
+
+function readSoqlDescribeGlobalRequest(body: unknown): DescribeGlobalRequest {
+	const objectBody = readObjectBody(body);
+	return {
+		username: readStringField(objectBody, "username", { required: true }) as string,
+		api: readSoqlApi(objectBody),
+	};
+}
+
+function readSoqlDescribeObjectRequest(body: unknown): DescribeObjectRequest {
+	const objectBody = readObjectBody(body);
+	return {
+		username: readStringField(objectBody, "username", { required: true }) as string,
+		api: readSoqlApi(objectBody),
+		sobject: readStringField(objectBody, "sobject", { required: true }) as string,
+	};
+}
+
+function readSoqlValidateRequest(body: unknown): ValidateQueryRequest {
+	const objectBody = readObjectBody(body);
+	return {
+		username: readStringField(objectBody, "username", { required: true }) as string,
+		api: readSoqlApi(objectBody),
+		soql: readStringField(objectBody, "soql", { required: true }) as string,
+	};
+}
+
+function readSoqlRunRequest(body: unknown): RunQueryRequest {
+	const objectBody = readObjectBody(body);
+	const previewLimitRaw = objectBody.previewLimit;
+	let previewLimit: number | undefined;
+	if (previewLimitRaw !== undefined) {
+		if (
+			typeof previewLimitRaw !== "number" ||
+			!Number.isInteger(previewLimitRaw) ||
+			previewLimitRaw <= 0
+		) {
+			throw new ApiError(
+				400,
+				"INVALID_REQUEST",
+				'Field "previewLimit" must be a positive integer when provided.',
+			);
+		}
+		previewLimit = previewLimitRaw;
+	}
+	const includeAllPagesRaw = objectBody.includeAllPages;
+	let includeAllPages: boolean | undefined;
+	if (includeAllPagesRaw !== undefined) {
+		if (typeof includeAllPagesRaw !== "boolean") {
+			throw new ApiError(
+				400,
+				"INVALID_REQUEST",
+				'Field "includeAllPages" must be a boolean when provided.',
+			);
+		}
+		includeAllPages = includeAllPagesRaw;
+	}
+	const nextRecordsUrl = readStringField(objectBody, "nextRecordsUrl");
+	if (nextRecordsUrl !== undefined && !nextRecordsUrl.startsWith("/")) {
+		throw new ApiError(400, "INVALID_REQUEST", 'Field "nextRecordsUrl" must start with "/".');
+	}
+	return {
+		username: readStringField(objectBody, "username", { required: true }) as string,
+		api: readSoqlApi(objectBody),
+		soql: readStringField(objectBody, "soql", { required: true }) as string,
+		previewLimit,
+		includeAllPages,
+		nextRecordsUrl,
+	};
+}
+
+function readSoqlBulkStartRequest(body: unknown): StartBulkQueryRequest {
+	const objectBody = readObjectBody(body);
+	return {
+		username: readStringField(objectBody, "username", { required: true }) as string,
+		soql: readStringField(objectBody, "soql", { required: true }) as string,
+	};
+}
+
+function readSoqlBulkStatusRequest(body: unknown): BulkQueryStatusRequest {
+	const objectBody = readObjectBody(body);
+	return {
+		username: readStringField(objectBody, "username", { required: true }) as string,
+		jobId: readStringField(objectBody, "jobId", { required: true }) as string,
+	};
+}
+
+function readSoqlBulkResultRequest(query: unknown): BulkQueryResultRequest {
+	const queryBody = readObjectBody(query);
+	return {
+		username: readStringField(queryBody, "username", { required: true }) as string,
+		jobId: readStringField(queryBody, "jobId", { required: true }) as string,
+	};
+}
+
 function readStartScratchOrgCreateRequest(body: unknown) {
 	const objectBody = readObjectBody(body);
-	const devHubUsername = readStringField(objectBody, "devHubUsername", { required: true }) as string;
+	const devHubUsername = readStringField(objectBody, "devHubUsername", {
+		required: true,
+	}) as string;
 	const alias = readStringField(objectBody, "alias");
 	const durationDaysRaw = objectBody.durationDays;
 
@@ -651,7 +781,11 @@ function readStartScratchOrgCreateRequest(body: unknown) {
 	}
 
 	const definitionValue = objectBody.definition;
-	if (typeof definitionValue !== "object" || definitionValue === null || Array.isArray(definitionValue)) {
+	if (
+		typeof definitionValue !== "object" ||
+		definitionValue === null ||
+		Array.isArray(definitionValue)
+	) {
 		throw new ApiError(400, "INVALID_REQUEST", 'Field "definition" must be an object.');
 	}
 
@@ -702,6 +836,42 @@ function readOrgTargetRequest(body: unknown): { target: { username: string } } {
 	};
 }
 
+function readListObjectsPageRequest(body: unknown): {
+	target: { username: string };
+	cursor?: string;
+	search?: string;
+	limit?: number;
+} {
+	const objectBody = readObjectBody(body);
+	const targetBody = readObjectBody(objectBody.target);
+	const limitRaw = objectBody.limit;
+	let limit: number | undefined;
+	if (limitRaw !== undefined) {
+		if (
+			typeof limitRaw !== "number" ||
+			!Number.isInteger(limitRaw) ||
+			limitRaw <= 0 ||
+			limitRaw > 200
+		) {
+			throw new ApiError(
+				400,
+				"INVALID_REQUEST",
+				'Field "limit" must be an integer between 1 and 200.',
+			);
+		}
+		limit = limitRaw;
+	}
+
+	return {
+		target: {
+			username: readStringField(targetBody, "username", { required: true }) as string,
+		},
+		cursor: readOptionalStringField(objectBody, "cursor"),
+		search: readOptionalStringField(objectBody, "search"),
+		limit,
+	};
+}
+
 function readCrossOrgDiffRequest(body: unknown): CrossOrgDiffRequest {
 	const objectBody = readObjectBody(body);
 	const sourceBody = readObjectBody(objectBody.source);
@@ -731,9 +901,10 @@ function readCrossOrgDiffRequest(body: unknown): CrossOrgDiffRequest {
 	};
 }
 
-function readListObjectChildrenRequest(
-	body: unknown,
-): { target: { username: string }; objectApiName: string } {
+function readListObjectChildrenRequest(body: unknown): {
+	target: { username: string };
+	objectApiName: string;
+} {
 	const objectBody = readObjectBody(body);
 	const targetBody = readObjectBody(objectBody.target);
 	return {
@@ -741,6 +912,18 @@ function readListObjectChildrenRequest(
 			username: readStringField(targetBody, "username", { required: true }) as string,
 		},
 		objectApiName: readStringField(objectBody, "objectApiName", { required: true }) as string,
+	};
+}
+
+function readFieldAccessRequest(body: unknown): FieldAccessRequest {
+	const objectBody = readObjectBody(body);
+	const targetBody = readObjectBody(objectBody.target);
+	return {
+		target: {
+			username: readStringField(targetBody, "username", { required: true }) as string,
+		},
+		sobjectType: readStringField(objectBody, "sobjectType", { required: true }) as string,
+		fieldFullName: readStringField(objectBody, "fieldFullName", { required: true }) as string,
 	};
 }
 

@@ -1,0 +1,1112 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>MavMeta Smoke Crawl Report</title>
+		<style>
+			:root {
+				color-scheme: dark;
+				--bg: #0a0c12;
+				--bg-elevated: #111521;
+				--bg-surface: #151a27;
+				--bg-surface-2: #191f30;
+				--bg-highlight: #1d2436;
+				--border: #2a3144;
+				--border-strong: #39415a;
+				--text: #eef2fb;
+				--text-muted: #aab3c7;
+				--text-soft: #7e879b;
+				--primary: #ff5b5f;
+				--primary-soft: rgba(255, 91, 95, 0.14);
+				--danger: #ff6b6b;
+				--warning: #ffbf66;
+				--success: #58d18f;
+				--info: #7fd1ff;
+				--shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+				--radius: 14px;
+				--radius-lg: 20px;
+				--space-1: 4px;
+				--space-2: 8px;
+				--space-3: 12px;
+				--space-4: 16px;
+				--space-5: 20px;
+				--space-6: 24px;
+				--space-8: 32px;
+				--transition-fast: 160ms ease;
+				--transition-med: 220ms ease;
+			}
+
+			* {
+				box-sizing: border-box;
+			}
+
+			html {
+				background:
+					radial-gradient(circle at top left, rgba(255, 91, 95, 0.12), transparent 32%),
+					radial-gradient(circle at top right, rgba(127, 209, 255, 0.08), transparent 28%),
+					linear-gradient(180deg, #090b10 0%, #0b0f16 100%);
+			}
+
+			body {
+				margin: 0;
+				min-height: 100vh;
+				color: var(--text);
+				font-family: Inter, "Segoe UI", system-ui, sans-serif;
+				background: transparent;
+			}
+
+			button,
+			input {
+				font: inherit;
+			}
+
+			button {
+				cursor: pointer;
+			}
+
+			a {
+				color: inherit;
+			}
+
+			.shell {
+				max-width: 1480px;
+				margin: 0 auto;
+				padding: var(--space-6);
+			}
+
+			.hero {
+				position: relative;
+				overflow: hidden;
+				padding: var(--space-6);
+				border: 1px solid var(--border);
+				border-radius: var(--radius-lg);
+				background:
+					linear-gradient(180deg, rgba(21, 26, 39, 0.96), rgba(17, 21, 33, 0.95)),
+					linear-gradient(135deg, rgba(255, 91, 95, 0.08), transparent 32%);
+				box-shadow: var(--shadow);
+			}
+
+			.hero::after {
+				content: "";
+				position: absolute;
+				inset: auto -120px -140px auto;
+				width: 280px;
+				height: 280px;
+				border-radius: 50%;
+				background: radial-gradient(circle, rgba(255, 91, 95, 0.16), transparent 65%);
+				pointer-events: none;
+			}
+
+			.hero-topline {
+				display: flex;
+				flex-wrap: wrap;
+				gap: var(--space-3);
+				align-items: center;
+				margin-bottom: var(--space-4);
+			}
+
+			.kicker {
+				margin: 0;
+				text-transform: uppercase;
+				letter-spacing: 0.16em;
+				font-size: 11px;
+				color: var(--text-soft);
+			}
+
+			.hero h1 {
+				margin: 0;
+				font-size: clamp(28px, 4vw, 42px);
+				line-height: 1.05;
+			}
+
+			.hero-copy {
+				max-width: 920px;
+				margin: var(--space-3) 0 0;
+				color: var(--text-muted);
+				line-height: 1.55;
+			}
+
+			.status-row {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: center;
+				gap: var(--space-2);
+				margin-top: var(--space-4);
+			}
+
+			.status-pill,
+			.chip,
+			.tag {
+				display: inline-flex;
+				align-items: center;
+				gap: 8px;
+				border: 1px solid var(--border);
+				border-radius: 999px;
+				padding: 7px 12px;
+				background: rgba(255, 255, 255, 0.02);
+				color: var(--text-muted);
+				font-size: 12px;
+				line-height: 1;
+				white-space: nowrap;
+			}
+
+			.status-pill strong,
+			.chip strong,
+			.tag strong {
+				color: var(--text);
+				font-weight: 600;
+			}
+
+			.status-pill[data-status="complete"] {
+				border-color: rgba(88, 209, 143, 0.35);
+				color: #c7f6dc;
+				background: rgba(88, 209, 143, 0.08);
+			}
+
+			.status-pill[data-status="interrupted"] {
+				border-color: rgba(255, 191, 102, 0.35);
+				color: #ffe2b6;
+				background: rgba(255, 191, 102, 0.08);
+			}
+
+			.status-pill[data-status="rate-limited"] {
+				border-color: rgba(127, 209, 255, 0.35);
+				color: #d6f2ff;
+				background: rgba(127, 209, 255, 0.08);
+			}
+
+			.summary-grid {
+				display: grid;
+				grid-template-columns: repeat(4, minmax(0, 1fr));
+				gap: var(--space-4);
+				margin-top: var(--space-6);
+			}
+
+			.card {
+				border: 1px solid var(--border);
+				border-radius: var(--radius);
+				background: linear-gradient(180deg, var(--bg-surface), var(--bg-elevated));
+				box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+			}
+
+			.stat-card {
+				padding: var(--space-4);
+			}
+
+			.stat-card .label {
+				margin: 0;
+				font-size: 12px;
+				color: var(--text-soft);
+				text-transform: uppercase;
+				letter-spacing: 0.08em;
+			}
+
+			.stat-card .value {
+				margin: var(--space-2) 0 0;
+				font-size: 32px;
+				line-height: 1;
+				letter-spacing: -0.03em;
+			}
+
+			.stat-card .meta {
+				margin: var(--space-2) 0 0;
+				color: var(--text-muted);
+				font-size: 13px;
+			}
+
+			.tabs {
+				display: flex;
+				flex-wrap: wrap;
+				gap: var(--space-2);
+				margin: var(--space-6) 0 var(--space-4);
+			}
+
+			.tab-button {
+				border: 1px solid var(--border);
+				border-radius: 999px;
+				padding: 10px 14px;
+				background: rgba(255, 255, 255, 0.02);
+				color: var(--text-muted);
+				transition:
+					background var(--transition-fast),
+					border-color var(--transition-fast),
+					color var(--transition-fast),
+					transform var(--transition-fast);
+			}
+
+			.tab-button:hover,
+			.tab-button:focus-visible {
+				border-color: var(--border-strong);
+				color: var(--text);
+				transform: translateY(-1px);
+				outline: none;
+			}
+
+			.tab-button.active {
+				border-color: rgba(255, 91, 95, 0.5);
+				background: var(--primary-soft);
+				color: var(--text);
+			}
+
+			.panels {
+				margin-top: var(--space-4);
+			}
+
+			.panel {
+				display: none;
+				padding: var(--space-5);
+				border: 1px solid var(--border);
+				border-radius: var(--radius-lg);
+				background: rgba(10, 12, 18, 0.55);
+				box-shadow: var(--shadow);
+			}
+
+			.panel.active {
+				display: block;
+			}
+
+			.panel-grid {
+				display: grid;
+				grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+				gap: var(--space-4);
+				align-items: start;
+			}
+
+			.stack {
+				display: grid;
+				gap: var(--space-4);
+			}
+
+			.section-header {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: center;
+				justify-content: space-between;
+				gap: var(--space-3);
+				margin-bottom: var(--space-3);
+			}
+
+			.section-header h2,
+			.section-header h3 {
+				margin: 0;
+			}
+
+			.section-header p {
+				margin: 0;
+				color: var(--text-muted);
+			}
+
+			.list {
+				display: grid;
+				gap: var(--space-3);
+			}
+
+			.item-card {
+				padding: var(--space-4);
+				border: 1px solid var(--border);
+				border-radius: var(--radius);
+				background: linear-gradient(180deg, rgba(21, 26, 39, 0.95), rgba(14, 18, 27, 0.96));
+			}
+
+			.item-card header {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: center;
+				justify-content: space-between;
+				gap: var(--space-2);
+				margin-bottom: var(--space-3);
+			}
+
+			.item-card h4 {
+				margin: 0;
+				font-size: 15px;
+			}
+
+			.item-card .subtitle {
+				margin: 0;
+				color: var(--text-muted);
+				font-size: 13px;
+			}
+
+			.keyline {
+				display: flex;
+				flex-wrap: wrap;
+				gap: var(--space-2);
+				margin-top: var(--space-3);
+			}
+
+			.kv-grid {
+				display: grid;
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				gap: var(--space-3);
+			}
+
+			.kv {
+				padding: 12px;
+				border-radius: 12px;
+				background: rgba(255, 255, 255, 0.03);
+				border: 1px solid rgba(255, 255, 255, 0.04);
+			}
+
+			.kv .label {
+				margin: 0 0 6px;
+				font-size: 11px;
+				text-transform: uppercase;
+				letter-spacing: 0.08em;
+				color: var(--text-soft);
+			}
+
+			.kv .value {
+				margin: 0;
+				line-height: 1.45;
+				color: var(--text);
+				overflow-wrap: anywhere;
+			}
+
+			.filters {
+				display: grid;
+				gap: var(--space-4);
+				padding: var(--space-4);
+				margin-bottom: var(--space-4);
+				border: 1px solid var(--border);
+				border-radius: var(--radius);
+				background: rgba(255, 255, 255, 0.02);
+			}
+
+			.filters-row {
+				display: flex;
+				flex-wrap: wrap;
+				gap: var(--space-2);
+				align-items: center;
+			}
+
+			.filter-label {
+				font-size: 12px;
+				color: var(--text-soft);
+				text-transform: uppercase;
+				letter-spacing: 0.08em;
+				margin-right: var(--space-2);
+			}
+
+			.filter-chip {
+				border: 1px solid var(--border);
+				border-radius: 999px;
+				padding: 8px 12px;
+				background: rgba(255, 255, 255, 0.02);
+				color: var(--text-muted);
+				transition:
+					border-color var(--transition-fast),
+					background var(--transition-fast),
+					color var(--transition-fast);
+			}
+
+			.filter-chip:hover,
+			.filter-chip:focus-visible {
+				border-color: var(--border-strong);
+				color: var(--text);
+				outline: none;
+			}
+
+			.filter-chip.active {
+				border-color: rgba(255, 91, 95, 0.45);
+				background: var(--primary-soft);
+				color: var(--text);
+			}
+
+			.search-input {
+				width: min(100%, 420px);
+				padding: 10px 12px;
+				border: 1px solid var(--border);
+				border-radius: 12px;
+				background: rgba(10, 12, 18, 0.65);
+				color: var(--text);
+			}
+
+			.search-input::placeholder {
+				color: var(--text-soft);
+			}
+
+			.findings-meta {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: center;
+				justify-content: space-between;
+				gap: var(--space-3);
+				margin-bottom: var(--space-3);
+			}
+
+			.findings-count {
+				color: var(--text-muted);
+				font-size: 13px;
+			}
+
+			.findings-list {
+				display: grid;
+				gap: var(--space-3);
+			}
+
+			.finding {
+				padding: var(--space-4);
+				border-radius: var(--radius);
+				border: 1px solid var(--border);
+				background: linear-gradient(180deg, rgba(21, 26, 39, 0.95), rgba(14, 18, 27, 0.95));
+			}
+
+			.finding[data-kind="zero-result"] {
+				box-shadow: inset 2px 0 0 var(--warning);
+			}
+
+			.finding[data-kind="error"] {
+				box-shadow: inset 2px 0 0 var(--danger);
+			}
+
+			.finding-topline {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: center;
+				justify-content: space-between;
+				gap: var(--space-2);
+				margin-bottom: var(--space-2);
+			}
+
+			.finding-topline h4 {
+				margin: 0;
+				font-size: 15px;
+			}
+
+			.finding-body {
+				display: grid;
+				gap: var(--space-3);
+				color: var(--text-muted);
+				font-size: 13px;
+			}
+
+			.finding-body code,
+			pre,
+			mono {
+				font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+			}
+
+			pre {
+				margin: 0;
+				padding: var(--space-4);
+				border-radius: var(--radius);
+				border: 1px solid var(--border);
+				background: #0e121b;
+				color: #dbe2f0;
+				overflow: auto;
+				tab-size: 2;
+			}
+
+			.finding-previews {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+				gap: var(--space-3);
+			}
+
+			.preview-link {
+				display: block;
+				border-radius: 12px;
+				border: 1px solid var(--border);
+				overflow: hidden;
+				background: rgba(255, 255, 255, 0.02);
+				text-decoration: none;
+			}
+
+			.preview-link img {
+				display: block;
+				width: 100%;
+				height: auto;
+			}
+
+			.preview-link span {
+				display: block;
+				padding: 10px 12px;
+				color: var(--text-muted);
+				font-size: 12px;
+			}
+
+			.raw-shell {
+				display: grid;
+				gap: var(--space-4);
+			}
+
+			.empty-state {
+				padding: var(--space-6);
+				border-radius: var(--radius);
+				border: 1px dashed var(--border-strong);
+				background: rgba(255, 255, 255, 0.02);
+				color: var(--text-muted);
+				text-align: center;
+			}
+
+			.empty-state h3,
+			.empty-state p {
+				margin: 0;
+			}
+
+			.empty-state p + p {
+				margin-top: var(--space-2);
+			}
+
+			@media (max-width: 1100px) {
+				.summary-grid,
+				.panel-grid,
+				.kv-grid {
+					grid-template-columns: 1fr;
+				}
+			}
+
+			@media (max-width: 720px) {
+				.shell {
+					padding: var(--space-4);
+				}
+
+				.hero,
+				.panel {
+					padding: var(--space-4);
+				}
+
+				.summary-grid {
+					gap: var(--space-3);
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<script id="report-data" type="application/json">
+			{}
+		</script>
+		<main class="shell">
+			<section class="hero card" aria-labelledby="report-title">
+				<div class="hero-topline">
+					<p class="kicker">MavMeta Smoke Crawl</p>
+					<span class="status-pill" id="status-pill" data-status="running">
+						<span>Status</span>
+						<strong>Running</strong>
+					</span>
+				</div>
+				<h1 id="report-title">Smoke crawl report</h1>
+				<p class="hero-copy" id="report-summary">Loading report data.</p>
+				<div class="status-row" id="report-metadata"></div>
+				<div class="summary-grid" id="summary-grid"></div>
+			</section>
+
+			<nav class="tabs" aria-label="Report sections">
+				<button class="tab-button active" type="button" data-tab-target="overview">Overview</button>
+				<button class="tab-button" type="button" data-tab-target="findings">Findings</button>
+				<button class="tab-button" type="button" data-tab-target="raw">Raw JSON</button>
+			</nav>
+
+			<section class="panels">
+				<section class="panel active" data-panel="overview" aria-label="Overview panel"></section>
+				<section class="panel" data-panel="findings" aria-label="Findings panel"></section>
+				<section class="panel" data-panel="raw" aria-label="Raw JSON panel"></section>
+			</section>
+		</main>
+
+		<script>
+			const raw = document.getElementById("report-data")?.textContent ?? "{}";
+			const report = JSON.parse(raw);
+
+			const state = {
+				mode: "all",
+				signal: "all",
+				area: "all",
+				query: "",
+			};
+
+			const AREA_LABELS = {
+				"metadata-explorer": "Metadata Explorer",
+				"object-explorer": "Object Explorer",
+				"lwc-editor": "LWC Editor",
+				"rest-explorer": "REST Explorer",
+				"soql-explorer": "SOQL Explorer",
+				cart: "Cart",
+			};
+
+			const SIGNAL_LABELS = {
+				network: "Network",
+				console: "Console",
+				toast: "Toast",
+				timeout: "Timeout",
+			};
+
+			const root = document.querySelector("main");
+			const summaryGrid = document.getElementById("summary-grid");
+			const reportSummary = document.getElementById("report-summary");
+			const reportMetadata = document.getElementById("report-metadata");
+			const statusPill = document.getElementById("status-pill");
+			const panels = {
+				overview: document.querySelector('[data-panel="overview"]'),
+				findings: document.querySelector('[data-panel="findings"]'),
+				raw: document.querySelector('[data-panel="raw"]'),
+			};
+			const rawPanel = panels.raw;
+
+			const allFindings = [
+				...report.coverageGaps.map((gap) => ({
+					kind: "zero-result",
+					typeLabel: "Coverage gap",
+					area: gap.area,
+					metadataType: gap.metadataType,
+					componentName: null,
+					signal: null,
+					message: "No matching items were returned.",
+					screenshot: gap.screenshot,
+					observedAt: gap.observedAt,
+				})),
+				...report.errors.map((error) => ({
+					kind: "error",
+					typeLabel: "Error",
+					area: error.area,
+					metadataType: error.metadataType,
+					componentName: error.componentName,
+					signal: error.signal,
+					message: error.message,
+					screenshot: error.screenshot,
+					observedAt: error.observedAt,
+				})),
+			].sort((left, right) => Date.parse(right.observedAt) - Date.parse(left.observedAt));
+
+			const uniqueAreas = [
+				...new Set([
+					...report.coverageGaps.map((item) => item.area),
+					...report.errors.map((item) => item.area),
+				]),
+			];
+			const uniqueSignals = [...new Set(report.errors.map((item) => item.signal))];
+			const areaCounts = uniqueAreas.map((area) => ({
+				area,
+				count: allFindings.filter((finding) => finding.area === area).length,
+			}));
+			const signalCounts = uniqueSignals.map((signal) => ({
+				signal,
+				count: report.errors.filter((error) => error.signal === signal).length,
+			}));
+
+			document.title = `MavMeta Smoke Crawl Report - ${report.run.status}`;
+
+			renderHero();
+			renderOverview();
+			renderFindings();
+			renderRaw();
+			wireTabs();
+
+			function renderHero() {
+				const startedAt = formatDate(report.run.startedAt);
+				const finishedAt = report.run.finishedAt
+					? formatDate(report.run.finishedAt)
+					: "In progress";
+				const completedAreas = report.run.config.areas.length;
+				const findingsCount = allFindings.length;
+				reportSummary.textContent = [
+					`Crawled ${completedAreas} area${completedAreas === 1 ? "" : "s"} with ${report.run.counts.typesVisited} type visit${report.run.counts.typesVisited === 1 ? "" : "s"}.`,
+					`${report.run.counts.coverageGaps} coverage gap${report.run.counts.coverageGaps === 1 ? "" : "s"} and ${report.run.counts.errors} error${report.run.counts.errors === 1 ? "" : "s"} were recorded across ${findingsCount} finding${findingsCount === 1 ? "" : "s"}.`,
+				].join(" ");
+
+				statusPill.dataset.status = report.run.status;
+				statusPill.innerHTML = `<span>Status</span><strong>${escapeHtml(capitalize(report.run.status))}</strong>`;
+
+				reportMetadata.innerHTML = [
+					pill(`Org`, report.run.orgAlias ?? report.run.orgUsername),
+					pill(`Started`, startedAt),
+					pill(`Finished`, finishedAt),
+					pill(
+						`Areas`,
+						report.run.config.areas.map((area) => AREA_LABELS[area] ?? area).join(", "),
+					),
+				].join("");
+
+				summaryGrid.innerHTML = [
+					statCard("Types Visited", report.run.counts.typesVisited, "crawler steps completed"),
+					statCard("Coverage Gaps", report.run.counts.coverageGaps, "zero-result findings"),
+					statCard("Errors", report.run.counts.errors, "network, console, toast, timeout"),
+					statCard(
+						"Areas",
+						report.run.config.areas.length,
+						`${report.run.config.depth} depth, ${report.run.config.delayMs} ms delay`,
+					),
+				].join("");
+			}
+
+			function renderOverview() {
+				if (!panels.overview) return;
+				panels.overview.innerHTML = `
+					<div class="panel-grid">
+						<div class="stack">
+							<section class="card" style="padding: var(--space-4);">
+								<div class="section-header">
+									<div>
+										<h2>Run configuration</h2>
+										<p>Inputs and execution context captured by the crawler.</p>
+									</div>
+								</div>
+								<div class="kv-grid">
+									${kv("Org alias", report.run.orgAlias ?? "None")}
+									${kv("Org username", report.run.orgUsername)}
+									${kv("Status", capitalize(report.run.status))}
+									${kv("Started at", formatDate(report.run.startedAt))}
+									${kv("Finished at", report.run.finishedAt ? formatDate(report.run.finishedAt) : "In progress")}
+									${kv("Areas", report.run.config.areas.map((area) => AREA_LABELS[area] ?? area).join(", "))}
+									${kv("Depth", String(report.run.config.depth))}
+									${kv("Delay", `${report.run.config.delayMs} ms`)}
+								</div>
+							</section>
+
+							<section class="card" style="padding: var(--space-4);">
+								<div class="section-header">
+									<div>
+										<h2>Areas visited</h2>
+										<p>Counts are derived from the findings bundle.</p>
+									</div>
+								</div>
+								<div class="list">
+									${areaCounts.length ? areaCounts.map(renderAreaSummary).join("") : emptyState("No findings were recorded for any area.")}
+								</div>
+							</section>
+						</div>
+
+						<div class="stack">
+							<section class="card" style="padding: var(--space-4);">
+								<div class="section-header">
+									<div>
+										<h2>Signals</h2>
+										<p>Console, network, toast, and timeout findings.</p>
+									</div>
+								</div>
+								<div class="list">
+									${signalCounts.length ? signalCounts.map(renderSignalSummary).join("") : emptyState("No error signals were captured.")}
+								</div>
+							</section>
+
+							<section class="card" style="padding: var(--space-4);">
+								<div class="section-header">
+									<div>
+										<h2>Recent findings</h2>
+										<p>Newest events first, regardless of type.</p>
+									</div>
+								</div>
+								<div class="list">
+									${allFindings.length ? allFindings.slice(0, 5).map(renderCompactFinding).join("") : emptyState("No findings recorded.")}
+								</div>
+							</section>
+						</div>
+					</div>
+				`;
+			}
+
+			function renderFindings() {
+				if (!panels.findings) return;
+				const signalChips = [
+					chipButton("all", "All signals", "signal"),
+					...uniqueSignals.map((signal) =>
+						chipButton(signal, SIGNAL_LABELS[signal] ?? signal, "signal"),
+					),
+				].join("");
+				const areaChips = [
+					chipButton("all", "All areas", "area"),
+					...uniqueAreas.map((area) => chipButton(area, AREA_LABELS[area] ?? area, "area")),
+				].join("");
+
+				panels.findings.innerHTML = `
+					<div class="filters" aria-label="Finding filters">
+						<div class="filters-row">
+							<span class="filter-label">Mode</span>
+							${chipButton("all", "All findings", "mode")}
+							${chipButton("coverage", "Coverage gaps", "mode")}
+							${chipButton("errors", "Errors", "mode")}
+						</div>
+						<div class="filters-row" data-filter-group="signal">
+							<span class="filter-label">Signal</span>
+							${signalChips}
+						</div>
+						<div class="filters-row" data-filter-group="area">
+							<span class="filter-label">Area</span>
+							${areaChips}
+						</div>
+						<div class="filters-row">
+							<span class="filter-label">Search</span>
+							<input
+								class="search-input"
+								type="search"
+								placeholder="Filter by metadata, component, message, or screenshot"
+								aria-label="Search findings"
+							/>
+						</div>
+					</div>
+					<div class="findings-meta">
+						<div class="findings-count" id="findings-count"></div>
+						<div class="keyline">
+							<span class="tag"><strong>Coverage gaps</strong> ${report.coverageGaps.length}</span>
+							<span class="tag"><strong>Errors</strong> ${report.errors.length}</span>
+						</div>
+					</div>
+					<div class="findings-list" id="findings-list"></div>
+				`;
+
+				const searchInput = panels.findings.querySelector(".search-input");
+				const findingsList = document.getElementById("findings-list");
+				const findingsCount = document.getElementById("findings-count");
+				const filterButtons = panels.findings.querySelectorAll("[data-filter-value]");
+				searchInput?.addEventListener("input", (event) => {
+					state.query = event.currentTarget.value.trim().toLowerCase();
+					renderFilteredFindings(findingsList, findingsCount);
+				});
+				filterButtons.forEach((button) => {
+					button.addEventListener("click", () => {
+						const filterType = button.dataset.filterType;
+						const filterValue = button.dataset.filterValue;
+						state[filterType] = filterValue;
+						renderFilterState();
+						renderFilteredFindings(findingsList, findingsCount);
+					});
+				});
+
+				renderFilterState();
+				renderFilteredFindings(findingsList, findingsCount);
+			}
+
+			function renderRaw() {
+				if (!rawPanel) return;
+				rawPanel.innerHTML = `
+					<div class="raw-shell">
+						<section class="card" style="padding: var(--space-4);">
+							<div class="section-header">
+								<div>
+									<h2>Raw report JSON</h2>
+									<p>Exactly what was written to report.json.</p>
+								</div>
+							</div>
+							<pre>${escapeHtml(JSON.stringify(report, null, 2))}</pre>
+						</section>
+					</div>
+				`;
+			}
+
+			function renderFilteredFindings(container, countNode) {
+				const filtered = allFindings.filter((finding) => {
+					if (state.mode === "coverage" && finding.kind !== "zero-result") return false;
+					if (state.mode === "errors" && finding.kind !== "error") return false;
+					if (state.signal !== "all" && finding.signal !== state.signal) return false;
+					if (state.area !== "all" && finding.area !== state.area) return false;
+
+					const haystack = [
+						finding.typeLabel,
+						finding.area,
+						finding.metadataType,
+						finding.componentName,
+						finding.signal,
+						finding.message,
+						finding.screenshot,
+						finding.observedAt,
+					]
+						.filter(Boolean)
+						.join(" ")
+						.toLowerCase();
+					if (state.query && !haystack.includes(state.query)) {
+						return false;
+					}
+					return true;
+				});
+
+				if (countNode) {
+					countNode.textContent = `${filtered.length} finding${filtered.length === 1 ? "" : "s"} match the current filters.`;
+				}
+
+				if (!container) return;
+				if (filtered.length === 0) {
+					container.innerHTML = emptyState("No findings match the selected filters.");
+					return;
+				}
+
+				container.innerHTML = filtered.map(renderFinding).join("");
+			}
+
+			function renderFinding(finding) {
+				const screenshot = finding.screenshot ? escapeHtml(finding.screenshot) : "";
+				const screenshotLink = finding.screenshot
+					? `
+						<div class="finding-previews">
+							<a class="preview-link" href="${screenshot}" target="_blank" rel="noreferrer">
+								<img src="${screenshot}" alt="${escapeHtml(finding.typeLabel)} screenshot" loading="lazy" />
+								<span>Open screenshot</span>
+							</a>
+						</div>
+					`
+					: "";
+				return `
+					<article class="finding card" data-kind="${finding.kind}">
+						<div class="finding-topline">
+							<h4>${escapeHtml(finding.typeLabel)}</h4>
+							<div class="keyline">
+								<span class="chip"><strong>${escapeHtml(AREA_LABELS[finding.area] ?? finding.area)}</strong></span>
+								${finding.signal ? `<span class="chip"><strong>${escapeHtml(SIGNAL_LABELS[finding.signal] ?? finding.signal)}</strong></span>` : ""}
+								<span class="chip"><strong>${escapeHtml(formatTime(finding.observedAt))}</strong></span>
+							</div>
+						</div>
+						<div class="finding-body">
+							<div>
+								<strong>${escapeHtml(finding.metadataType)}</strong>
+								${finding.componentName ? ` <span> / ${escapeHtml(finding.componentName)}</span>` : ""}
+							</div>
+							<p>${escapeHtml(finding.message)}</p>
+							<div class="keyline">
+								${finding.screenshot ? `<span class="tag"><strong>Screenshot</strong> ${escapeHtml(finding.screenshot)}</span>` : ""}
+							</div>
+							${screenshotLink}
+						</div>
+					</article>
+				`;
+			}
+
+			function renderCompactFinding(finding) {
+				return `
+					<article class="finding" data-kind="${finding.kind}">
+						<div class="finding-topline">
+							<h4>${escapeHtml(finding.typeLabel)}</h4>
+							<span class="chip"><strong>${escapeHtml(formatTime(finding.observedAt))}</strong></span>
+						</div>
+						<div class="finding-body">
+							<div>
+								<strong>${escapeHtml(AREA_LABELS[finding.area] ?? finding.area)}</strong>
+								${finding.componentName ? ` / ${escapeHtml(finding.componentName)}` : ""}
+							</div>
+							<p>${escapeHtml(finding.message)}</p>
+						</div>
+					</article>
+				`;
+			}
+
+			function renderAreaSummary(entry) {
+				const percent = allFindings.length
+					? Math.round((entry.count / allFindings.length) * 100)
+					: 0;
+				return `
+					<div class="item-card">
+						<header>
+							<div>
+								<h4>${escapeHtml(AREA_LABELS[entry.area] ?? entry.area)}</h4>
+								<p class="subtitle">${entry.count} finding${entry.count === 1 ? "" : "s"} captured</p>
+							</div>
+							<span class="chip"><strong>${percent}%</strong> of findings</span>
+						</header>
+						<div class="finding-body">
+							<p>Coverage gaps and errors are both counted here so the area view stays complete.</p>
+						</div>
+					</div>
+				`;
+			}
+
+			function renderSignalSummary(entry) {
+				return `
+					<div class="item-card">
+						<header>
+							<div>
+								<h4>${escapeHtml(SIGNAL_LABELS[entry.signal] ?? entry.signal)}</h4>
+								<p class="subtitle">${entry.count} error${entry.count === 1 ? "" : "s"} captured</p>
+							</div>
+							<span class="chip"><strong>${entry.count}</strong></span>
+						</header>
+						<div class="finding-body">
+							<p>Only error findings carry signal types, so the signal view focuses on console, network, toast, and timeout issues.</p>
+						</div>
+					</div>
+				`;
+			}
+
+			function wireTabs() {
+				const buttons = document.querySelectorAll("[data-tab-target]");
+				buttons.forEach((button) => {
+					button.addEventListener("click", () => {
+						const target = button.dataset.tabTarget;
+						buttons.forEach((candidate) =>
+							candidate.classList.toggle("active", candidate === button),
+						);
+						Object.entries(panels).forEach(([name, panel]) => {
+							if (!panel) return;
+							panel.classList.toggle("active", name === target);
+						});
+					});
+				});
+			}
+
+			function renderFilterState() {
+				for (const button of document.querySelectorAll("[data-filter-value]")) {
+					const type = button.dataset.filterType;
+					const value = button.dataset.filterValue;
+					button.classList.toggle("active", state[type] === value);
+				}
+			}
+
+			function chipButton(value, label, filterType) {
+				return `<button class="filter-chip" type="button" data-filter-type="${filterType}" data-filter-value="${escapeHtml(value)}">${escapeHtml(label)}</button>`;
+			}
+
+			function pill(label, value) {
+				return `<span class="status-pill"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></span>`;
+			}
+
+			function statCard(label, value, meta) {
+				return `
+					<section class="card stat-card">
+						<p class="label">${escapeHtml(label)}</p>
+						<p class="value">${escapeHtml(String(value))}</p>
+						<p class="meta">${escapeHtml(meta)}</p>
+					</section>
+				`;
+			}
+
+			function kv(label, value) {
+				return `
+					<div class="kv">
+						<p class="label">${escapeHtml(label)}</p>
+						<p class="value">${escapeHtml(String(value))}</p>
+					</div>
+				`;
+			}
+
+			function emptyState(text) {
+				return `<div class="empty-state"><p>${escapeHtml(text)}</p></div>`;
+			}
+
+			function formatDate(value) {
+				const date = new Date(value);
+				return Number.isNaN(date.getTime())
+					? "Unknown"
+					: date.toLocaleString([], {
+							dateStyle: "medium",
+							timeStyle: "medium",
+						});
+			}
+
+			function formatTime(value) {
+				const date = new Date(value);
+				return Number.isNaN(date.getTime())
+					? "Unknown time"
+					: date.toLocaleString([], {
+							month: "short",
+							day: "numeric",
+							hour: "2-digit",
+							minute: "2-digit",
+						});
+			}
+
+			function capitalize(value) {
+				return String(value)
+					.replace(/[-_]/g, " ")
+					.replace(/^\w/, (match) => match.toUpperCase());
+			}
+
+			function escapeHtml(value) {
+				return String(value)
+					.replaceAll("&", "&amp;")
+					.replaceAll("<", "&lt;")
+					.replaceAll(">", "&gt;")
+					.replaceAll('"', "&quot;")
+					.replaceAll("'", "&#39;");
+			}
+		</script>
+	</body>
+</html>

@@ -13,19 +13,11 @@ export function assertSalesforceHost(rawUrl: string): void {
 	try {
 		parsed = new URL(rawUrl);
 	} catch {
-		throw new ApiError(
-			400,
-			"INVALID_SALESFORCE_HOST",
-			"Salesforce instance URL is invalid.",
-		);
+		throw new ApiError(400, "INVALID_SALESFORCE_HOST", "Salesforce instance URL is invalid.");
 	}
 
 	if (parsed.protocol !== "https:") {
-		throw new ApiError(
-			400,
-			"INVALID_SALESFORCE_HOST",
-			"Salesforce instance URL must use HTTPS.",
-		);
+		throw new ApiError(400, "INVALID_SALESFORCE_HOST", "Salesforce instance URL must use HTTPS.");
 	}
 
 	const hostname = parsed.hostname.toLowerCase();

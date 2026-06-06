@@ -39,9 +39,7 @@ export function dedupeSavedMetadataItems(
 	return deduped;
 }
 
-export function serializeSavedMetadataShoppingLists(
-	lists: SavedMetadataShoppingList[],
-): string {
+export function serializeSavedMetadataShoppingLists(lists: SavedMetadataShoppingList[]): string {
 	const payload: SavedMetadataShoppingListsPayload = {
 		version: SAVED_METADATA_SHOPPING_LISTS_VERSION,
 		lists,
@@ -71,12 +69,14 @@ export function parseSavedMetadataShoppingListsPayload(
 function isSavedMetadataShoppingList(value: unknown): value is SavedMetadataShoppingList {
 	if (!value || typeof value !== "object") return false;
 	const candidate = value as Partial<SavedMetadataShoppingList>;
-	return typeof candidate.id === "string" &&
+	return (
+		typeof candidate.id === "string" &&
 		typeof candidate.name === "string" &&
 		typeof candidate.createdAt === "string" &&
 		typeof candidate.updatedAt === "string" &&
 		Array.isArray(candidate.items) &&
-		candidate.items.every(isSavedMetadataShoppingListItem);
+		candidate.items.every(isSavedMetadataShoppingListItem)
+	);
 }
 
 function isSavedMetadataShoppingListItem(value: unknown): value is SavedMetadataShoppingListItem {

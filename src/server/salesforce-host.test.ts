@@ -17,14 +17,10 @@ describe("assertSalesforceHost", () => {
 	});
 
 	it("rejects non-https urls", () => {
-		expect(() => assertSalesforceHost("http://mydomain.my.salesforce.com")).toThrow(
-			/HTTPS/,
-		);
+		expect(() => assertSalesforceHost("http://mydomain.my.salesforce.com")).toThrow(/HTTPS/);
 	});
 
 	it("rejects non-salesforce domains", () => {
-		expect(() => assertSalesforceHost("https://evil.example.com")).toThrow(
-			/not allowed/,
-		);
+		expect(() => assertSalesforceHost("https://evil.example.com")).toThrow(/not allowed/);
 	});
 });

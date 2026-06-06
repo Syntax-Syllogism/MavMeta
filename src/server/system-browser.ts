@@ -5,8 +5,9 @@ type SpawnFn = typeof spawn;
 export async function openInSystemBrowser(
 	url: string,
 	spawnProcess: SpawnFn = spawn,
+	platform: NodeJS.Platform = process.platform,
 ): Promise<void> {
-	const command = getOpenCommand(url);
+	const command = getOpenCommand(url, platform);
 
 	await new Promise<void>((resolve, reject) => {
 		const process = spawnProcess(command[0], command.slice(1), {
@@ -20,13 +21,13 @@ export async function openInSystemBrowser(
 	});
 }
 
-function getOpenCommand(url: string): [string, ...string[]] {
-	if (process.platform === "darwin") {
+function getOpenCommand(url: string, platform: NodeJS.Platform): [string, ...string[]] {
+	if (platform === "darwin") {
 		return ["open", url];
 	}
 
-	if (process.platform === "win32") {
-		return ["cmd", "/c", "start", "", url];
+	if (platform === "win32") {
+		return ["rundll32", "url.dll,FileProtocolHandler", url];
 	}
 
 	return ["xdg-open", url];

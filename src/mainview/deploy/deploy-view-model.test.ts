@@ -60,8 +60,6 @@ describe("deploy view model", () => {
 
 	it("formats missing failure messages", () => {
 		expect(getFailureMessage({ problem: "" })).toBe("Unknown error");
-		expect(getFailureMessage({ problem: "Missing dependency" })).toBe(
-			"Missing dependency",
-		);
+		expect(getFailureMessage({ problem: "Missing dependency" })).toBe("Missing dependency");
 	});
 });

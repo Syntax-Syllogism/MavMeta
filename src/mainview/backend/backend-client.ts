@@ -19,9 +19,12 @@ import type {
 import type {
 	ListObjectsRequest,
 	ListObjectsResponse,
+	ListObjectsPageRequest,
+	ListObjectsPageResponse,
 	ListObjectChildrenRequest,
 	ListObjectChildrenResponse,
 } from "../../shared/object-explorer";
+import type { FieldAccessRequest, FieldAccessResponse } from "../../shared/field-access";
 import type {
 	CancelCrossOrgDeployRequest,
 	CancelCrossOrgDeployResponse,
@@ -45,6 +48,20 @@ import type {
 } from "../../shared/org";
 import type { RestExecuteRequest, RestExecuteResponse } from "../../shared/rest";
 import type {
+	BulkQueryStatusRequest,
+	BulkQueryStatusResponse,
+	DescribeGlobalRequest,
+	DescribeGlobalResponse,
+	DescribeObjectRequest,
+	DescribeObjectResponse,
+	RunQueryRequest,
+	RunQueryResponse,
+	StartBulkQueryRequest,
+	StartBulkQueryResponse,
+	ValidateQueryRequest,
+	ValidateQueryResponse,
+} from "../../shared/soql";
+import type {
 	ListSnapshotsResponse,
 	ScratchOrgCreateStatusRequest,
 	ScratchOrgCreateStatusResponse,
@@ -65,10 +82,12 @@ async function requestJson<TResponse>(
 	method: HttpMethod,
 	path: string,
 	body?: unknown,
+	options: { signal?: AbortSignal } = {},
 ): Promise<TResponse> {
 	const token = await readSessionTokenOrFetch();
 	const response = await fetch(path, {
 		method,
+		signal: options.signal,
 		headers: {
 			...JSON_HEADERS,
 			"x-mavmeta-session": token,
@@ -82,6 +101,23 @@ async function requestJson<TResponse>(
 	}
 
 	return (await response.json()) as TResponse;
+}
+
+async function requestText(method: HttpMethod, path: string): Promise<string> {
+	const token = await readSessionTokenOrFetch();
+	const response = await fetch(path, {
+		method,
+		headers: {
+			"x-mavmeta-session": token,
+		},
+	});
+
+	if (!response.ok) {
+		const error = await parseError(response);
+		throw new Error(error);
+	}
+
+	return response.text();
 }
 
 async function parseError(response: Response): Promise<string> {
@@ -144,8 +180,7 @@ export const backendClient = {
 		requestJson<OrgActionResponse>("POST", "/api/orgs/auth", request),
 	reauthOrg: (target: OrgTarget) =>
 		requestJson<OrgActionResponse>("POST", "/api/orgs/reauth", target),
-	openOrg: (target: OrgTarget) =>
-		requestJson<OrgActionResponse>("POST", "/api/orgs/open", target),
+	openOrg: (target: OrgTarget) => requestJson<OrgActionResponse>("POST", "/api/orgs/open", target),
 	logoutOrg: (target: OrgTarget) =>
 		requestJson<OrgActionResponse>("POST", "/api/orgs/logout", target),
 	setAlias: (request: SetAliasRequest) =>
@@ -176,16 +211,40 @@ export const backendClient = {
 		requestJson<CancelCrossOrgDeployResponse>("POST", "/api/deploy/cross-org/cancel", request),
 	executeRestRequest: (request: RestExecuteRequest) =>
 		requestJson<RestExecuteResponse>("POST", "/api/rest/execute", request),
+	soqlDescribeGlobal: (request: DescribeGlobalRequest) =>
+		requestJson<DescribeGlobalResponse>("POST", "/api/soql/describe-global", request),
+	soqlDescribeObject: (request: DescribeObjectRequest) =>
+		requestJson<DescribeObjectResponse>("POST", "/api/soql/describe-object", request),
+	soqlValidate: (request: ValidateQueryRequest) =>
+		requestJson<ValidateQueryResponse>("POST", "/api/soql/validate", request),
+	soqlRun: (request: RunQueryRequest) =>
+		requestJson<RunQueryResponse>("POST", "/api/soql/run", request),
+	soqlBulkStart: (request: StartBulkQueryRequest) =>
+		requestJson<StartBulkQueryResponse>("POST", "/api/soql/bulk/start", request),
+	soqlBulkStatus: (request: BulkQueryStatusRequest) =>
+		requestJson<BulkQueryStatusResponse>("POST", "/api/soql/bulk/status", request),
+	soqlBulkResult: (username: string, jobId: string) =>
+		requestText(
+			"GET",
+			`/api/soql/bulk/result?username=${encodeURIComponent(username)}&jobId=${encodeURIComponent(jobId)}`,
+		),
 	startScratchOrgCreate: (request: StartScratchOrgCreateRequest) =>
 		requestJson<StartScratchOrgCreateResponse>("POST", "/api/orgs/create-scratch/start", request),
 	getScratchOrgCreateStatus: (request: ScratchOrgCreateStatusRequest) =>
 		requestJson<ScratchOrgCreateStatusResponse>("POST", "/api/orgs/create-scratch/status", request),
 	listScratchOrgSnapshots: (devHubUsername: string) =>
-		requestJson<ListSnapshotsResponse>("GET", `/api/orgs/snapshots?devHub=${encodeURIComponent(devHubUsername)}`),
+		requestJson<ListSnapshotsResponse>(
+			"GET",
+			`/api/orgs/snapshots?devHub=${encodeURIComponent(devHubUsername)}`,
+		),
 	listObjects: (request: ListObjectsRequest) =>
 		requestJson<ListObjectsResponse>("POST", "/api/objects/list", request),
+	listObjectsPage: (request: ListObjectsPageRequest) =>
+		requestJson<ListObjectsPageResponse>("POST", "/api/objects/list-page", request),
 	listObjectChildren: (request: ListObjectChildrenRequest) =>
 		requestJson<ListObjectChildrenResponse>("POST", "/api/objects/children", request),
+	listFieldAccess: (request: FieldAccessRequest, options: { signal?: AbortSignal } = {}) =>
+		requestJson<FieldAccessResponse>("POST", "/api/fields/access", request, options),
 	listLwcBundles: (request: ListLwcBundlesRequest) =>
 		requestJson<ListLwcBundlesResponse>("POST", "/api/lwc/bundles/list", request),
 	getLwcBundle: (request: GetLwcBundleRequest) =>

@@ -74,26 +74,18 @@ type SalesforceFileProperties = {
 };
 
 export type MetadataServiceApi = {
-	listMetadataTypes(
-		request: ListMetadataTypesRequest,
-	): Promise<ListMetadataTypesResponse>;
+	listMetadataTypes(request: ListMetadataTypesRequest): Promise<ListMetadataTypesResponse>;
 	listMetadataComponents(
 		request: ListMetadataComponentsRequest,
 	): Promise<ListMetadataComponentsResponse>;
-	getComponentSource(
-		request: GetComponentSourceRequest,
-	): Promise<GetComponentSourceResponse>;
-	getCrossOrgComponentDiff(
-		request: CrossOrgDiffRequest,
-	): Promise<CrossOrgDiffResponse>;
+	getComponentSource(request: GetComponentSourceRequest): Promise<GetComponentSourceResponse>;
+	getCrossOrgComponentDiff(request: CrossOrgDiffRequest): Promise<CrossOrgDiffResponse>;
 };
 
 export class MetadataService implements MetadataServiceApi {
 	private componentSourceCache = new Map<string, CacheEntry>();
 
-	async listMetadataTypes(
-		request: ListMetadataTypesRequest,
-	): Promise<ListMetadataTypesResponse> {
+	async listMetadataTypes(request: ListMetadataTypesRequest): Promise<ListMetadataTypesResponse> {
 		const connection = await this.getConnection(request.target.username);
 		const apiVersion = connection.getApiVersion();
 		const describeResult = (await connection.metadata.describe(
@@ -117,9 +109,7 @@ export class MetadataService implements MetadataServiceApi {
 		const components = componentsRaw
 			.map((record) => toMetadataComponentSummary(record, request.metadataType))
 			.filter((component): component is MetadataComponentSummary => component !== undefined)
-			.filter((component) =>
-				matchesMetadataComponentSearch(component, normalizedSearch),
-			)
+			.filter((component) => matchesMetadataComponentSearch(component, normalizedSearch))
 			.sort(compareMetadataComponents);
 
 		return {
@@ -152,9 +142,7 @@ export class MetadataService implements MetadataServiceApi {
 
 		const folderType = getFolderMetadataType(request.metadataType);
 		if (!folderType) {
-			return toArray(
-				await connection.metadata.list([{ type: request.metadataType }], apiVersion),
-			);
+			return toArray(await connection.metadata.list([{ type: request.metadataType }], apiVersion));
 		}
 
 		const folderRecords = toArray(
@@ -192,11 +180,16 @@ export class MetadataService implements MetadataServiceApi {
 			const connection = org.getConnection() as unknown as JsforceConnection;
 			const apiVersion = connection.getApiVersion();
 
-			const xmlContent = await this.retrieveInMemory(connection, request.metadataType, request.fullName, apiVersion);
+			const xmlContent = await this.retrieveInMemory(
+				connection,
+				request.metadataType,
+				request.fullName,
+				apiVersion,
+			);
 
-			const lines = xmlContent.split('\n');
+			const lines = xmlContent.split("\n");
 			const truncated = lines.length > 1000;
-			const source = truncated ? lines.slice(0, 1000).join('\n') + '\n... (truncated)' : xmlContent;
+			const source = truncated ? lines.slice(0, 1000).join("\n") + "\n... (truncated)" : xmlContent;
 
 			if (this.componentSourceCache.size >= MAX_CACHE_ENTRIES) {
 				const firstKey = this.componentSourceCache.keys().next().value;
@@ -206,7 +199,14 @@ export class MetadataService implements MetadataServiceApi {
 			}
 			this.componentSourceCache.set(cacheKey, { source, truncated });
 
-			return { target: request.target, metadataType: request.metadataType, fullName: request.fullName, source, truncated, apiVersion };
+			return {
+				target: request.target,
+				metadataType: request.metadataType,
+				fullName: request.fullName,
+				source,
+				truncated,
+				apiVersion,
+			};
 		} catch (error) {
 			return {
 				target: request.target,
@@ -220,9 +220,7 @@ export class MetadataService implements MetadataServiceApi {
 		}
 	}
 
-	async getCrossOrgComponentDiff(
-		request: CrossOrgDiffRequest,
-	): Promise<CrossOrgDiffResponse> {
+	async getCrossOrgComponentDiff(request: CrossOrgDiffRequest): Promise<CrossOrgDiffResponse> {
 		const sourceUsername = request.source.username;
 		const targetUsername = request.target.username;
 
@@ -299,7 +297,7 @@ export class MetadataService implements MetadataServiceApi {
 			const status = await locator.complete();
 			if (status.zipFile) {
 				const extracted = await this.extractFromZipBuffer(
-					Buffer.from(status.zipFile, 'base64'),
+					Buffer.from(status.zipFile, "base64"),
 					fullName,
 				);
 				if (extracted) {
@@ -316,15 +314,15 @@ export class MetadataService implements MetadataServiceApi {
 		return this.readAndSerialize(connection, metadataType, fullName);
 	}
 
-	private async extractFromZipBuffer(zipBuffer: Buffer, fullName: string): Promise<string | undefined> {
+	private async extractFromZipBuffer(
+		zipBuffer: Buffer,
+		fullName: string,
+	): Promise<string | undefined> {
 		const JSZip = await import("jszip");
 		const zip = await JSZip.default.loadAsync(zipBuffer);
-		const baseName = fullName.includes('/') ? fullName.split('/').pop()! : fullName;
+		const baseName = fullName.includes("/") ? fullName.split("/").pop()! : fullName;
 		const matchingFile = Object.keys(zip.files).find(
-			(name) =>
-				!zip.files[name].dir &&
-				isSafeZipEntryPath(name) &&
-				name.includes(baseName),
+			(name) => !zip.files[name].dir && isSafeZipEntryPath(name) && name.includes(baseName),
 		);
 		if (matchingFile) {
 			return zip.files[matchingFile].async("string");
@@ -360,7 +358,7 @@ export class MetadataService implements MetadataServiceApi {
 		const header = '<?xml version="1.0" encoding="UTF-8"?>\n';
 		const rootStart = `<${metadataType} xmlns="http://soap.sforce.com/2006/04/metadata">\n`;
 		const rootEnd = `</${metadataType}>`;
-		
+
 		const body = this.objectToXml(metadata, 1);
 		return header + rootStart + body + rootEnd;
 	}
@@ -394,12 +392,18 @@ export class MetadataService implements MetadataServiceApi {
 	private escapeXml(unsafe: string): string {
 		return unsafe.replace(/[<>&"']/g, (c) => {
 			switch (c) {
-				case '<': return '&lt;';
-				case '>': return '&gt;';
-				case '&': return '&amp;';
-				case '"': return '&quot;';
-				case "'": return '&apos;';
-				default: return c;
+				case "<":
+					return "&lt;";
+				case ">":
+					return "&gt;";
+				case "&":
+					return "&amp;";
+				case '"':
+					return "&quot;";
+				case "'":
+					return "&apos;";
+				default:
+					return c;
 			}
 		});
 	}
@@ -416,9 +420,7 @@ function getFolderMetadataType(metadataType: string): string | undefined {
 	return folderTypes[metadataType];
 }
 
-function toMetadataTypes(
-	describeResult: SalesforceDescribeMetadataResult,
-): MetadataTypeSummary[] {
+function toMetadataTypes(describeResult: SalesforceDescribeMetadataResult): MetadataTypeSummary[] {
 	return (describeResult.metadataObjects ?? [])
 		.filter(hasXmlName)
 		.map((metadataObject) => ({
@@ -605,8 +607,7 @@ function resolveDiffState(
 	if (targetResponse.source === undefined) {
 		return "MissingInTarget";
 	}
-	return normalizeXmlForDiff(sourceResponse.source) ===
-		normalizeXmlForDiff(targetResponse.source)
+	return normalizeXmlForDiff(sourceResponse.source) === normalizeXmlForDiff(targetResponse.source)
 		? "Same"
 		: "Changed";
 }

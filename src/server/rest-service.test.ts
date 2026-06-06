@@ -31,9 +31,11 @@ describe("RestService", () => {
 	beforeEach(() => {
 		connectionFactory = vi.fn().mockResolvedValue(makeConnection());
 		fetcher = vi.fn();
-		service = new RestService({ 
-			connectionFactory: connectionFactory as (username: string) => Promise<{ instanceUrl: string; accessToken: string | undefined }>,
-			fetcher: fetcher as typeof fetch 
+		service = new RestService({
+			connectionFactory: connectionFactory as (
+				username: string,
+			) => Promise<{ instanceUrl: string; accessToken: string | undefined }>,
+			fetcher: fetcher as typeof fetch,
 		});
 	});
 
@@ -206,7 +208,9 @@ describe("RestService", () => {
 		});
 
 		it("builds URL from instanceUrl and path", async () => {
-			connectionFactory.mockResolvedValue(makeConnection({ instanceUrl: "https://custom.my.salesforce.com" }));
+			connectionFactory.mockResolvedValue(
+				makeConnection({ instanceUrl: "https://custom.my.salesforce.com" }),
+			);
 			fetcher.mockResolvedValue(makeFetchResponse(200, "{}"));
 
 			await service.executeRequest({
@@ -222,7 +226,9 @@ describe("RestService", () => {
 		});
 
 		it("rejects connection instanceUrl outside salesforce domains", async () => {
-			connectionFactory.mockResolvedValue(makeConnection({ instanceUrl: "https://evil.example.com" }));
+			connectionFactory.mockResolvedValue(
+				makeConnection({ instanceUrl: "https://evil.example.com" }),
+			);
 
 			await expect(
 				service.executeRequest({
@@ -235,7 +241,9 @@ describe("RestService", () => {
 		});
 
 		it("rejects non-https connection instanceUrl", async () => {
-			connectionFactory.mockResolvedValue(makeConnection({ instanceUrl: "http://test.salesforce.com" }));
+			connectionFactory.mockResolvedValue(
+				makeConnection({ instanceUrl: "http://test.salesforce.com" }),
+			);
 
 			await expect(
 				service.executeRequest({

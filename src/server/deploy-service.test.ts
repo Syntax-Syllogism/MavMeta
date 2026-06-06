@@ -80,9 +80,7 @@ describe("DeployService", () => {
 
 		const status = await waitForTerminalStatus(service, "op-2");
 		expect(status.status).toBe("failed");
-		expect(status.result?.message).toContain(
-			"Salesforce did not return a deploy job id.",
-		);
+		expect(status.result?.message).toContain("Salesforce did not return a deploy job id.");
 		expect(connection.metadata.checkDeployStatus).not.toHaveBeenCalled();
 	});
 
@@ -122,14 +120,12 @@ describe("DeployService", () => {
 
 	it("cancels a running operation and returns canceled state", async () => {
 		const cancelDeploy = vi.fn().mockResolvedValue(undefined);
-		const checkDeployStatus = vi
-			.fn()
-			.mockResolvedValue({
-				status: "InProgress",
-				numberComponentsTotal: 3,
-				numberComponentsDeployed: 1,
-				numberComponentErrors: 0,
-			});
+		const checkDeployStatus = vi.fn().mockResolvedValue({
+			status: "InProgress",
+			numberComponentsTotal: 3,
+			numberComponentsDeployed: 1,
+			numberComponentErrors: 0,
+		});
 		const connection = {
 			query: vi.fn().mockResolvedValue({ records: [] }),
 			metadata: {
@@ -210,18 +206,17 @@ describe("DeployService", () => {
 
 	it("runs cross-org validate deploy and returns succeeded status", async () => {
 		const sourceZip = new JSZip();
-		sourceZip.file(
-			"classes/MyClass.cls",
-			"public class MyClass {}",
-		);
+		sourceZip.file("classes/MyClass.cls", "public class MyClass {}");
 		sourceZip.file(
 			"classes/MyClass.cls-meta.xml",
 			'<?xml version="1.0" encoding="UTF-8"?><ApexClass xmlns="http://soap.sforce.com/2006/04/metadata"><apiVersion>58.0</apiVersion><status>Active</status></ApexClass>',
 		);
-		const sourceZipBase64 = (await sourceZip.generateAsync({
-			type: "nodebuffer",
-			compression: "DEFLATE",
-		})).toString("base64");
+		const sourceZipBase64 = (
+			await sourceZip.generateAsync({
+				type: "nodebuffer",
+				compression: "DEFLATE",
+			})
+		).toString("base64");
 
 		const checkDeployStatus = vi.fn().mockResolvedValue({
 			status: "Succeeded",
@@ -364,10 +359,12 @@ describe("DeployService", () => {
 			"unpackaged/classes/MyClass.cls-meta.xml",
 			'<?xml version="1.0" encoding="UTF-8"?><ApexClass xmlns="http://soap.sforce.com/2006/04/metadata"></ApexClass>',
 		);
-		const sourceZipBase64 = (await sourceZip.generateAsync({
-			type: "nodebuffer",
-			compression: "DEFLATE",
-		})).toString("base64");
+		const sourceZipBase64 = (
+			await sourceZip.generateAsync({
+				type: "nodebuffer",
+				compression: "DEFLATE",
+			})
+		).toString("base64");
 
 		const retrieve = vi.fn().mockReturnValue({
 			complete: vi.fn().mockResolvedValue({ zipFile: sourceZipBase64 }),
@@ -581,7 +578,9 @@ describe("DeployService", () => {
 
 		const status = await waitForCrossOrgTerminalStatus(service, "xop-3");
 		expect(status.status).toBe("failed");
-		expect(status.result?.message).toContain("Could not retrieve ApexClass:MyClass from source org");
+		expect(status.result?.message).toContain(
+			"Could not retrieve ApexClass:MyClass from source org",
+		);
 	});
 
 	it("fails cross-org deploy gracefully when retrieve polling times out", async () => {
@@ -589,9 +588,7 @@ describe("DeployService", () => {
 			complete: () => Promise<{ zipFile?: string }>;
 		};
 		locator.complete = vi.fn().mockImplementation(async () => {
-			const timeoutError = new Error(
-				"Polling time out. Retrieve operation is not completed.",
-			);
+			const timeoutError = new Error("Polling time out. Retrieve operation is not completed.");
 			locator.emit("error", timeoutError);
 			throw timeoutError;
 		});
@@ -633,10 +630,12 @@ describe("DeployService", () => {
 			"classes/MyClass.cls-meta.xml",
 			'<?xml version="1.0" encoding="UTF-8"?><ApexClass xmlns="http://soap.sforce.com/2006/04/metadata"></ApexClass>',
 		);
-		const sourceZipBase64 = (await sourceZip.generateAsync({
-			type: "nodebuffer",
-			compression: "DEFLATE",
-		})).toString("base64");
+		const sourceZipBase64 = (
+			await sourceZip.generateAsync({
+				type: "nodebuffer",
+				compression: "DEFLATE",
+			})
+		).toString("base64");
 
 		const checkDeployStatus = vi.fn().mockResolvedValue({
 			status: "InProgress",

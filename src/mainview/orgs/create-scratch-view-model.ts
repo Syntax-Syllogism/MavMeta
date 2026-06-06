@@ -2,7 +2,7 @@ export type ScratchOrgTemplate = "minimal" | "admin-dev" | "package-dev" | "cust
 export type WizardCreationMode = "standard" | "snapshot";
 
 export type WizardSettingsEntry = {
-	group: string;                    // camelCased group key, e.g. "lightningExperienceSettings"
+	group: string; // camelCased group key, e.g. "lightningExperienceSettings"
 	subKeys: Record<string, boolean>; // sub-key -> value; only booleans in V1
 };
 
@@ -23,7 +23,12 @@ export const TEMPLATE_LABELS: Record<ScratchOrgTemplate, string> = {
 	custom: "Blank / Custom JSON",
 };
 
-export const EDITION_OPTIONS = ["Developer", "Enterprise", "Partner Developer", "Partner Enterprise"] as const;
+export const EDITION_OPTIONS = [
+	"Developer",
+	"Enterprise",
+	"Partner Developer",
+	"Partner Enterprise",
+] as const;
 
 export const FEATURE_SUGGESTIONS = [
 	"Communities",
@@ -41,14 +46,14 @@ export const FEATURE_SUGGESTIONS = [
 ] as const;
 
 export type CuratedSettingSubKey = {
-	name: string;          // exact JSON key, e.g. "enableS1DesktopEnabled"
-	label?: string;        // optional human label; defaults to name
+	name: string; // exact JSON key, e.g. "enableS1DesktopEnabled"
+	label?: string; // optional human label; defaults to name
 	defaultValue: boolean; // initial toggle state when group is added
 };
 
 export type CuratedSettingGroup = {
-	group: string;               // camelCased key, e.g. "lightningExperienceSettings"
-	label: string;               // PascalCase human label, e.g. "LightningExperienceSettings"
+	group: string; // camelCased key, e.g. "lightningExperienceSettings"
+	label: string; // PascalCase human label, e.g. "LightningExperienceSettings"
 	subKeys: CuratedSettingSubKey[];
 };
 
@@ -64,30 +69,22 @@ export const CURATED_SETTINGS: CuratedSettingGroup[] = [
 	{
 		group: "mobileSettings",
 		label: "MobileSettings",
-		subKeys: [
-			{ name: "enableS1EncryptedStoragePref2", defaultValue: false },
-		],
+		subKeys: [{ name: "enableS1EncryptedStoragePref2", defaultValue: false }],
 	},
 	{
 		group: "chatterSettings",
 		label: "ChatterSettings",
-		subKeys: [
-			{ name: "enableChatter", defaultValue: true },
-		],
+		subKeys: [{ name: "enableChatter", defaultValue: true }],
 	},
 	{
 		group: "communitiesSettings",
 		label: "CommunitiesSettings",
-		subKeys: [
-			{ name: "enableNetworksEnabled", defaultValue: false },
-		],
+		subKeys: [{ name: "enableNetworksEnabled", defaultValue: false }],
 	},
 	{
 		group: "searchSettings",
 		label: "SearchSettings",
-		subKeys: [
-			{ name: "documentContentSearchEnabled", defaultValue: false },
-		],
+		subKeys: [{ name: "documentContentSearchEnabled", defaultValue: false }],
 	},
 ];
 
@@ -106,7 +103,9 @@ const TEMPLATE_BASE_DEFINITIONS: Record<ScratchOrgTemplate, Record<string, unkno
 	custom: {},
 };
 
-export function buildScratchOrgDefinition(settings: ScratchOrgWizardSettings): Record<string, unknown> {
+export function buildScratchOrgDefinition(
+	settings: ScratchOrgWizardSettings,
+): Record<string, unknown> {
 	if (settings.creationMode === "snapshot") {
 		const snapshotName = settings.snapshotName?.trim();
 		return snapshotName ? { snapshot: snapshotName } : {};
@@ -182,13 +181,41 @@ export function validateDurationDays(value: number): DurationValidationResult {
 }
 
 const ALIAS_ADJECTIVES = [
-	"dev", "cloud", "force", "lightning", "apex", "flex", "agile", "swift",
-	"bright", "bold", "core", "prime", "smart", "keen", "rapid", "crisp",
+	"dev",
+	"cloud",
+	"force",
+	"lightning",
+	"apex",
+	"flex",
+	"agile",
+	"swift",
+	"bright",
+	"bold",
+	"core",
+	"prime",
+	"smart",
+	"keen",
+	"rapid",
+	"crisp",
 ] as const;
 
 const ALIAS_NOUNS = [
-	"force", "hub", "wave", "bolt", "trail", "spark", "edge", "flow",
-	"field", "grid", "link", "node", "forge", "vault", "orbit", "pulse",
+	"force",
+	"hub",
+	"wave",
+	"bolt",
+	"trail",
+	"spark",
+	"edge",
+	"flow",
+	"field",
+	"grid",
+	"link",
+	"node",
+	"forge",
+	"vault",
+	"orbit",
+	"pulse",
 ] as const;
 
 export function generateAlias(seed?: number): string {

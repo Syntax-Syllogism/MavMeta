@@ -100,7 +100,7 @@ describe("MetadataExplorer", () => {
 			button.classList.contains("group-toggle"),
 		);
 		if (!salesToggle) throw new Error("Sales group toggle not found");
-		
+
 		// Groups are collapsed by default in this test setup
 		expect(screen.queryByRole("button", { name: "ByMonth" })).toBeNull();
 

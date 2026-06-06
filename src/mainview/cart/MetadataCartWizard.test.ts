@@ -54,10 +54,7 @@ describe("MetadataCartWizard", () => {
 		isRunningDeploy: false,
 		deployProgressPercent: 0,
 		deployProgressMessage: "",
-		lastDeployResult: undefined as
-			| DestructiveDeployResult
-			| CrossOrgDeployResult
-			| undefined,
+		lastDeployResult: undefined as DestructiveDeployResult | CrossOrgDeployResult | undefined,
 		canRunDeleteAction: true,
 		canDeployValidatedResult: false,
 		canDeployValidatedCrossOrgResult: false,
@@ -120,7 +117,9 @@ describe("MetadataCartWizard", () => {
 			stagedItemGroups: [],
 		});
 
-		expect(screen.getByText("No staged metadata. Stage components from Metadata Explorer first.")).toBeTruthy();
+		expect(
+			screen.getByText("No staged metadata. Stage components from Metadata Explorer first."),
+		).toBeTruthy();
 	});
 
 	it("renders saved lists and supports saved-list actions", async () => {

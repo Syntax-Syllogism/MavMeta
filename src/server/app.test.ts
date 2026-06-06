@@ -8,9 +8,12 @@ import { createApp } from "./app";
 import type { DeployServiceApi } from "./deploy-service";
 import type { LwcServiceApi } from "./lwc-service";
 import type { MetadataServiceApi } from "./metadata-service";
+import type { ObjectExplorerServiceApi } from "./object-explorer-service";
 import type { OrgServiceApi } from "./org-service";
 import type { RestServiceApi } from "./rest-service";
+import type { SoqlServiceApi } from "./soql-service";
 import type { ScratchOrgServiceApi } from "./scratch-org-service";
+import type { FieldAccessServiceApi } from "./field-access-service";
 
 function createOrgServiceMock(): OrgServiceApi {
 	return {
@@ -44,7 +47,8 @@ function createMetadataServiceMock(): MetadataServiceApi {
 			target: { username: "user@example.com" },
 			metadataType: "ApexClass",
 			fullName: "MyClass",
-			source: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ApexClass xmlns=\"http://soap.sforce.com/2006/04/metadata\"></ApexClass>",
+			source:
+				'<?xml version="1.0" encoding="UTF-8"?>\n<ApexClass xmlns="http://soap.sforce.com/2006/04/metadata"></ApexClass>',
 		}),
 		getCrossOrgComponentDiff: vi.fn().mockResolvedValue({
 			source: { username: "source@example.com" },
@@ -56,6 +60,26 @@ function createMetadataServiceMock(): MetadataServiceApi {
 					state: "Changed",
 				},
 			],
+		}),
+	};
+}
+
+function createObjectExplorerServiceMock(): ObjectExplorerServiceApi {
+	return {
+		listObjects: vi.fn().mockResolvedValue({
+			target: { username: "user@example.com" },
+			objects: [],
+		}),
+		listObjectsPage: vi.fn().mockResolvedValue({
+			target: { username: "user@example.com" },
+			objects: [],
+			nextCursor: undefined,
+		}),
+		listObjectChildren: vi.fn().mockResolvedValue({
+			target: { username: "user@example.com" },
+			objectApiName: "Account",
+			children: {},
+			errors: [],
 		}),
 	};
 }
@@ -113,6 +137,24 @@ function createLwcServiceMock(): LwcServiceApi {
 	};
 }
 
+function createSoqlServiceMock(): SoqlServiceApi {
+	return {
+		describeGlobal: vi.fn().mockResolvedValue({ sobjects: [] }),
+		describeObject: vi.fn().mockResolvedValue({ sobject: "Account", fields: [] }),
+		validateQuery: vi.fn().mockResolvedValue({ valid: true }),
+		runQuery: vi.fn().mockResolvedValue({
+			records: [],
+			totalSize: 0,
+			done: true,
+		}),
+		startBulkQuery: vi.fn().mockResolvedValue({ jobId: "750xx0000000001AAA" }),
+		getBulkQueryStatus: vi
+			.fn()
+			.mockResolvedValue({ jobId: "750xx0000000001AAA", state: "JobComplete" }),
+		getBulkQueryResult: vi.fn().mockResolvedValue("Id,Name\n001,Acme\n"),
+	};
+}
+
 function createScratchOrgServiceMock(): ScratchOrgServiceApi {
 	return {
 		startCreate: vi.fn().mockResolvedValue({ operationId: "scratch-op-1" }),
@@ -124,6 +166,22 @@ function createScratchOrgServiceMock(): ScratchOrgServiceApi {
 		listSnapshots: vi.fn().mockResolvedValue({
 			eligibility: "enabled",
 			snapshots: [],
+		}),
+	};
+}
+
+function createFieldAccessServiceMock(): FieldAccessServiceApi {
+	return {
+		resolve: vi.fn().mockResolvedValue({
+			rows: [],
+			stats: {
+				totalActiveUsersWithAccess: 0,
+				profileGrants: 0,
+				permissionSetGrants: 0,
+				permissionSetGroupGrants: 0,
+				mutedUsers: 0,
+			},
+			warnings: [],
 		}),
 	};
 }
@@ -142,9 +200,7 @@ function createTestApp(options: Parameters<typeof createApp>[0] = {}) {
 	});
 }
 
-function withApiHeaders(
-	request: InjectOptions,
-): InjectOptions {
+function withApiHeaders(request: InjectOptions): InjectOptions {
 	return {
 		...request,
 		headers: {
@@ -168,10 +224,12 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "GET",
-			url: "/api/health",
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "GET",
+				url: "/api/health",
+			}),
+		);
 
 		expect(response.statusCode).toBe(200);
 		expect(response.json()).toEqual({ status: "ok" });
@@ -187,10 +245,12 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "GET",
-			url: "/api/orgs/snapshots?devHub=hub%40example.com",
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "GET",
+				url: "/api/orgs/snapshots?devHub=hub%40example.com",
+			}),
+		);
 
 		expect(response.statusCode).toBe(200);
 		expect(scratchOrgService.listSnapshots).toHaveBeenCalledWith("hub@example.com");
@@ -205,10 +265,12 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "GET",
-			url: "/api/orgs/snapshots",
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "GET",
+				url: "/api/orgs/snapshots",
+			}),
+		);
 
 		expect(response.statusCode).toBe(400);
 		expect(response.json()).toEqual({
@@ -226,11 +288,13 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "POST",
-			url: "/api/orgs/open",
-			payload: { username: "" },
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/orgs/open",
+				payload: { username: "" },
+			}),
+		);
 
 		expect(response.statusCode).toBe(400);
 		expect(response.json()).toEqual({
@@ -249,11 +313,13 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "POST",
-			url: "/api/orgs/open",
-			payload: { username: "user@example.com", startPath: "lightning/setup/DeployStatus/home" },
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/orgs/open",
+				payload: { username: "user@example.com", startPath: "lightning/setup/DeployStatus/home" },
+			}),
+		);
 
 		expect(response.statusCode).toBe(400);
 		expect(response.json()).toEqual({
@@ -272,11 +338,13 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "POST",
-			url: "/api/orgs/reauth",
-			payload: { username: "user@example.com" },
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/orgs/reauth",
+				payload: { username: "user@example.com" },
+			}),
+		);
 
 		expect(response.statusCode).toBe(200);
 		expect(response.json()).toEqual({ message: "reauth" });
@@ -294,15 +362,17 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "POST",
-			url: "/api/metadata/components",
-			payload: {
-				target: { username: "user@example.com" },
-				metadataType: "ApexClass",
-				search: "controller",
-			},
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/metadata/components",
+				payload: {
+					target: { username: "user@example.com" },
+					metadataType: "ApexClass",
+					search: "controller",
+				},
+			}),
+		);
 
 		expect(response.statusCode).toBe(200);
 		expect(metadataService.listMetadataComponents).toHaveBeenCalledWith({
@@ -310,6 +380,99 @@ describe("createApp", () => {
 			metadataType: "ApexClass",
 			search: "controller",
 			folder: undefined,
+		});
+	});
+
+	it("routes field access requests to field-access service", async () => {
+		const fieldAccessService = createFieldAccessServiceMock();
+		const app = createTestApp({
+			orgService: createOrgServiceMock(),
+			metadataService: createMetadataServiceMock(),
+			deployService: createDeployServiceMock(),
+			fieldAccessService,
+		});
+		apps.push(app);
+
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/fields/access",
+				payload: {
+					target: { username: "user@example.com" },
+					sobjectType: "Account",
+					fieldFullName: "Account.Legacy_Code__c",
+				},
+			}),
+		);
+
+		expect(response.statusCode).toBe(200);
+		expect(fieldAccessService.resolve).toHaveBeenCalledWith({
+			target: { username: "user@example.com" },
+			sobjectType: "Account",
+			fieldFullName: "Account.Legacy_Code__c",
+		});
+	});
+
+	it("passes object page requests to object explorer service", async () => {
+		const objectExplorerService = createObjectExplorerServiceMock();
+		const app = createTestApp({
+			orgService: createOrgServiceMock(),
+			metadataService: createMetadataServiceMock(),
+			deployService: createDeployServiceMock(),
+			objectExplorerService,
+		});
+		apps.push(app);
+
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/objects/list-page",
+				payload: {
+					target: { username: "user@example.com" },
+					cursor: "Account",
+					search: "invoice",
+					limit: 50,
+				},
+			}),
+		);
+
+		expect(response.statusCode).toBe(200);
+		expect(objectExplorerService.listObjectsPage).toHaveBeenCalledWith({
+			target: { username: "user@example.com" },
+			cursor: "Account",
+			search: "invoice",
+			limit: 50,
+		});
+	});
+
+	it("accepts blank optional object page search as omitted", async () => {
+		const objectExplorerService = createObjectExplorerServiceMock();
+		const app = createTestApp({
+			orgService: createOrgServiceMock(),
+			metadataService: createMetadataServiceMock(),
+			deployService: createDeployServiceMock(),
+			objectExplorerService,
+		});
+		apps.push(app);
+
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/objects/list-page",
+				payload: {
+					target: { username: "user@example.com" },
+					search: "",
+					limit: 50,
+				},
+			}),
+		);
+
+		expect(response.statusCode).toBe(200);
+		expect(objectExplorerService.listObjectsPage).toHaveBeenCalledWith({
+			target: { username: "user@example.com" },
+			cursor: undefined,
+			search: undefined,
+			limit: 50,
 		});
 	});
 
@@ -322,15 +485,17 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "POST",
-			url: "/api/metadata/component-source",
-			payload: {
-				target: { username: "user@example.com" },
-				metadataType: "ApexClass",
-				fullName: "MyClass",
-			},
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/metadata/component-source",
+				payload: {
+					target: { username: "user@example.com" },
+					metadataType: "ApexClass",
+					fullName: "MyClass",
+				},
+			}),
+		);
 
 		expect(response.statusCode).toBe(200);
 		expect(metadataService.getComponentSource).toHaveBeenCalledWith({
@@ -351,15 +516,17 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "POST",
-			url: "/api/metadata/diff",
-			payload: {
-				source: { username: "source@example.com" },
-				target: { username: "target@example.com" },
-				components: [{ metadataType: "ApexClass", fullName: "MyClass" }],
-			},
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/metadata/diff",
+				payload: {
+					source: { username: "source@example.com" },
+					target: { username: "target@example.com" },
+					components: [{ metadataType: "ApexClass", fullName: "MyClass" }],
+				},
+			}),
+		);
 
 		expect(response.statusCode).toBe(200);
 		expect(metadataService.getCrossOrgComponentDiff).toHaveBeenCalledWith({
@@ -385,15 +552,17 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "POST",
-			url: "/api/deploy/start",
-			payload: {
-				target: { username: "user@example.com" },
-				mode: "validate",
-				components: [{ metadataType: "ApexClass", fullName: "MyClass" }],
-			},
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/deploy/start",
+				payload: {
+					target: { username: "user@example.com" },
+					mode: "validate",
+					components: [{ metadataType: "ApexClass", fullName: "MyClass" }],
+				},
+			}),
+		);
 
 		expect(response.statusCode).toBe(200);
 		expect(response.json()).toEqual({ operationId: "op-1" });
@@ -413,15 +582,17 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "POST",
-			url: "/api/deploy/start",
-			payload: {
-				target: { username: "user@example.com" },
-				mode: "validate",
-				components: [{ metadataType: "ApexClass", fullName: "Bad<Name" }],
-			},
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/deploy/start",
+				payload: {
+					target: { username: "user@example.com" },
+					mode: "validate",
+					components: [{ metadataType: "ApexClass", fullName: "Bad<Name" }],
+				},
+			}),
+		);
 
 		expect(response.statusCode).toBe(400);
 		expect(response.json()).toEqual({
@@ -440,16 +611,18 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "POST",
-			url: "/api/deploy/cross-org/start",
-			payload: {
-				source: { username: "source@example.com" },
-				target: { username: "target@example.com" },
-				mode: "validate",
-				components: [{ metadataType: "ApexClass", fullName: "MyClass" }],
-			},
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/deploy/cross-org/start",
+				payload: {
+					source: { username: "source@example.com" },
+					target: { username: "target@example.com" },
+					mode: "validate",
+					components: [{ metadataType: "ApexClass", fullName: "MyClass" }],
+				},
+			}),
+		);
 
 		expect(response.statusCode).toBe(200);
 		expect(deployService.startCrossOrgDeploy).toHaveBeenCalledWith({
@@ -469,11 +642,13 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "POST",
-			url: "/api/deploy/cross-org/status",
-			payload: { operationId: "xop-1" },
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/deploy/cross-org/status",
+				payload: { operationId: "xop-1" },
+			}),
+		);
 
 		expect(response.statusCode).toBe(200);
 		expect(deployService.getCrossOrgDeployStatus).toHaveBeenCalledWith("xop-1");
@@ -488,11 +663,13 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "POST",
-			url: "/api/deploy/cross-org/cancel",
-			payload: { operationId: "xop-1" },
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/deploy/cross-org/cancel",
+				payload: { operationId: "xop-1" },
+			}),
+		);
 
 		expect(response.statusCode).toBe(200);
 		expect(deployService.cancelCrossOrgDeploy).toHaveBeenCalledWith("xop-1");
@@ -508,15 +685,17 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "POST",
-			url: "/api/rest/execute",
-			payload: {
-				username: "user@example.com",
-				method: "GET",
-				path: "/services/data/v62.0/limits",
-			},
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/rest/execute",
+				payload: {
+					username: "user@example.com",
+					method: "GET",
+					path: "/services/data/v62.0/limits",
+				},
+			}),
+		);
 
 		expect(response.statusCode).toBe(200);
 		expect(response.json()).toMatchObject({ status: 200, isJson: true });
@@ -529,6 +708,78 @@ describe("createApp", () => {
 		});
 	});
 
+	it("calls soql describe-global endpoint", async () => {
+		const soqlService = createSoqlServiceMock();
+		const app = createTestApp({
+			orgService: createOrgServiceMock(),
+			metadataService: createMetadataServiceMock(),
+			deployService: createDeployServiceMock(),
+			soqlService,
+		});
+		apps.push(app);
+
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/soql/describe-global",
+				payload: { username: "user@example.com", api: "rest" },
+			}),
+		);
+
+		expect(response.statusCode).toBe(200);
+		expect(soqlService.describeGlobal).toHaveBeenCalledWith({
+			username: "user@example.com",
+			api: "rest",
+		});
+	});
+
+	it("rejects soql describe-global with invalid api", async () => {
+		const app = createTestApp({
+			orgService: createOrgServiceMock(),
+			metadataService: createMetadataServiceMock(),
+			deployService: createDeployServiceMock(),
+			soqlService: createSoqlServiceMock(),
+		});
+		apps.push(app);
+
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/soql/describe-global",
+				payload: { username: "user@example.com", api: "metadata" },
+			}),
+		);
+
+		expect(response.statusCode).toBe(400);
+		expect(response.json()).toMatchObject({ code: "INVALID_REQUEST" });
+	});
+
+	it("rejects soql run with invalid nextRecordsUrl", async () => {
+		const app = createTestApp({
+			orgService: createOrgServiceMock(),
+			metadataService: createMetadataServiceMock(),
+			deployService: createDeployServiceMock(),
+			soqlService: createSoqlServiceMock(),
+		});
+		apps.push(app);
+
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/soql/run",
+				payload: {
+					username: "user@example.com",
+					api: "rest",
+					soql: "SELECT Id FROM Account",
+					nextRecordsUrl: "services/data/v62.0/query/01g...",
+				},
+			}),
+		);
+
+		expect(response.statusCode).toBe(400);
+		expect(response.json()).toMatchObject({ code: "INVALID_REQUEST" });
+	});
+
 	it("rejects rest execute with invalid method", async () => {
 		const app = createTestApp({
 			orgService: createOrgServiceMock(),
@@ -538,15 +789,17 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "POST",
-			url: "/api/rest/execute",
-			payload: {
-				username: "user@example.com",
-				method: "PUT",
-				path: "/services/data/v62.0/limits",
-			},
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/rest/execute",
+				payload: {
+					username: "user@example.com",
+					method: "PUT",
+					path: "/services/data/v62.0/limits",
+				},
+			}),
+		);
 
 		expect(response.statusCode).toBe(400);
 		expect(response.json()).toMatchObject({ code: "INVALID_REQUEST" });
@@ -561,14 +814,16 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "POST",
-			url: "/api/rest/execute",
-			payload: {
-				method: "GET",
-				path: "/services/data/v62.0/limits",
-			},
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/rest/execute",
+				payload: {
+					method: "GET",
+					path: "/services/data/v62.0/limits",
+				},
+			}),
+		);
 
 		expect(response.statusCode).toBe(400);
 		expect(response.json()).toMatchObject({ code: "INVALID_REQUEST" });
@@ -584,11 +839,13 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "POST",
-			url: "/api/lwc/bundles/list",
-			payload: { orgUsername: "user@example.com" },
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/lwc/bundles/list",
+				payload: { orgUsername: "user@example.com" },
+			}),
+		);
 
 		expect(response.statusCode).toBe(200);
 		expect(response.json()).toEqual({ bundles: [] });
@@ -604,11 +861,13 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "POST",
-			url: "/api/lwc/bundles/list",
-			payload: {},
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/lwc/bundles/list",
+				payload: {},
+			}),
+		);
 
 		expect(response.statusCode).toBe(400);
 		expect(response.json()).toMatchObject({ code: "INVALID_REQUEST" });
@@ -624,11 +883,13 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "POST",
-			url: "/api/lwc/bundles/get",
-			payload: { orgUsername: "user@example.com", bundleId: "001000000000001AAA" },
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/lwc/bundles/get",
+				payload: { orgUsername: "user@example.com", bundleId: "001000000000001AAA" },
+			}),
+		);
 
 		expect(response.statusCode).toBe(200);
 		expect(lwcService.getBundle).toHaveBeenCalledWith({
@@ -647,22 +908,22 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "POST",
-			url: "/api/lwc/bundles/deploy",
-			payload: {
-				orgUsername: "user@example.com",
-				bundleId: "001000000000001AAA",
-				files: [{ path: "lwc/foo/foo.js", source: "updated" }],
-				expectedLastModifiedDate: "2024-01-01T00:00:00.000Z",
-				force: true,
-			},
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/lwc/bundles/deploy",
+				payload: {
+					orgUsername: "user@example.com",
+					bundleId: "001000000000001AAA",
+					files: [{ path: "lwc/foo/foo.js", source: "updated" }],
+					expectedLastModifiedDate: "2024-01-01T00:00:00.000Z",
+					force: true,
+				},
+			}),
+		);
 
 		expect(response.statusCode).toBe(200);
-		expect(lwcService.deployBundle).toHaveBeenCalledWith(
-			expect.objectContaining({ force: true }),
-		);
+		expect(lwcService.deployBundle).toHaveBeenCalledWith(expect.objectContaining({ force: true }));
 	});
 
 	it("rejects lwc deploy with missing files array", async () => {
@@ -674,15 +935,17 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "POST",
-			url: "/api/lwc/bundles/deploy",
-			payload: {
-				orgUsername: "user@example.com",
-				bundleId: "001000000000001AAA",
-				expectedLastModifiedDate: "2024-01-01T00:00:00.000Z",
-			},
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/lwc/bundles/deploy",
+				payload: {
+					orgUsername: "user@example.com",
+					bundleId: "001000000000001AAA",
+					expectedLastModifiedDate: "2024-01-01T00:00:00.000Z",
+				},
+			}),
+		);
 
 		expect(response.statusCode).toBe(400);
 		expect(response.json()).toMatchObject({ code: "INVALID_REQUEST" });
@@ -697,13 +960,15 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "GET",
-			url: "/api/orgs",
-			headers: {
-				"x-mavmeta-session": "wrong-session-token",
-			},
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "GET",
+				url: "/api/orgs",
+				headers: {
+					"x-mavmeta-session": "wrong-session-token",
+				},
+			}),
+		);
 
 		expect(response.statusCode).toBe(401);
 		expect(response.json()).toEqual({
@@ -721,13 +986,15 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "GET",
-			url: "/api/health",
-			headers: {
-				host: "evil.example.com",
-			},
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "GET",
+				url: "/api/health",
+				headers: {
+					host: "evil.example.com",
+				},
+			}),
+		);
 
 		expect(response.statusCode).toBe(403);
 		expect(response.json()).toEqual({
@@ -744,10 +1011,12 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "GET",
-			url: "/api/health",
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "GET",
+				url: "/api/health",
+			}),
+		);
 
 		expect(response.headers["content-security-policy"]).toContain("default-src 'self'");
 		expect(response.headers["x-frame-options"]).toBe("DENY");
@@ -758,9 +1027,7 @@ describe("createApp", () => {
 		const orgService = createOrgServiceMock();
 		orgService.openOrg = vi
 			.fn()
-			.mockRejectedValue(
-				new Error("Authorization: Bearer super-secret-token-value"),
-			);
+			.mockRejectedValue(new Error("Authorization: Bearer super-secret-token-value"));
 		const app = createTestApp({
 			orgService,
 			metadataService: createMetadataServiceMock(),
@@ -768,11 +1035,13 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "POST",
-			url: "/api/orgs/open",
-			payload: { username: "user@example.com" },
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/orgs/open",
+				payload: { username: "user@example.com" },
+			}),
+		);
 
 		expect(response.statusCode).toBe(500);
 		expect(response.json()).toMatchObject({
@@ -790,10 +1059,12 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "PUT",
-			url: "/api/orgs",
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "PUT",
+				url: "/api/orgs",
+			}),
+		);
 
 		expect(response.statusCode).toBe(405);
 		expect(response.json()).toEqual({
@@ -810,16 +1081,18 @@ describe("createApp", () => {
 		});
 		apps.push(app);
 
-		const response = await app.inject(withApiHeaders({
-			method: "POST",
-			url: "/api/orgs/open",
-			headers: {
-				origin: "https://evil.example.com",
-			},
-			payload: {
-				username: "user@example.com",
-			},
-		}));
+		const response = await app.inject(
+			withApiHeaders({
+				method: "POST",
+				url: "/api/orgs/open",
+				headers: {
+					origin: "https://evil.example.com",
+				},
+				payload: {
+					username: "user@example.com",
+				},
+			}),
+		);
 
 		expect(response.statusCode).toBe(403);
 		expect(response.json()).toEqual({
@@ -1031,7 +1304,7 @@ describe("createApp", () => {
 		const staticRoot = mkdtempSync(join(tmpdir(), "mavmeta-static-"));
 		writeFileSync(
 			join(staticRoot, "index.html"),
-			"<!doctype html><html><head><title>RF</title></head><body><div id=\"app\"></div></body></html>",
+			'<!doctype html><html><head><title>RF</title></head><body><div id="app"></div></body></html>',
 			"utf8",
 		);
 
@@ -1045,10 +1318,12 @@ describe("createApp", () => {
 			});
 			apps.push(app);
 
-			const response = await app.inject(withApiHeaders({
-				method: "GET",
-				url: "/",
-			}));
+			const response = await app.inject(
+				withApiHeaders({
+					method: "GET",
+					url: "/",
+				}),
+			);
 
 			expect(response.statusCode).toBe(200);
 			expect(response.headers["content-type"]).toContain("text/html");

@@ -26,7 +26,8 @@ MavMeta is a powerful, localhost control center designed specifically for Salesf
 
 - **🧪 Advanced Tools**
   - **REST Explorer:** Test and explore Salesforce APIs with a built-in interactive playground.
-  - **LWC Playground:** Experiment with and preview Lightning Web Components in a local sandbox.
+  - **SOQL Explorer:** Compose, run, and iterate on SOQL queries against any connected org with instant results. Export results to .csv or .json files.
+  - **LWC Playground:** Experiment with and preview Lightning Web Components in a local sandbox. Edits are saved via the fast Salesforce Tooling API. For bundles that import custom fields via `@salesforce/schema` (e.g. `import FIELD from '@salesforce/schema/MyObject__c.MyField__c'`), MavMeta automatically retries the deploy through the Metadata API to work around a [confirmed Salesforce Tooling API bug](https://github.com/jprichter/ccdx-sample/). The fallback is transparent — saves succeed as normal, though they may take a few extra seconds.
 
 - **🎨 Modern User Experience**
   - **Dark & Light Modes:** Choose the theme that fits your workflow.
@@ -42,12 +43,14 @@ The frontend is Svelte 5. The backend is a local Node server (Fastify) that uses
 `src/mainview/App.svelte` is now the orchestration shell. It composes workflow-oriented components and keeps cross-workflow state orchestration in one place.
 
 Primary UI components:
+
 - `orgs/OrgDirectory.svelte`: org auth form, org directory table, and org row actions.
 - `metadata/MetadataExplorer.svelte`: metadata type discovery/filtering, component explorer, grouping, and inspector.
 - `cart/MetadataCartWizard.svelte`: staged metadata review, action stepper, destructive confirmation, and result/progress UI.
 - `StatusBar.svelte`, `AliasModal.svelte`, `ScratchDeleteModal.svelte`: stable shell/modal primitives extracted from `App.svelte`.
 
 Pure view-model helpers (unit-tested):
+
 - `metadata/metadata-view-model.ts`
 - `cart/cart-view-model.ts`
 - `deploy/deploy-view-model.ts`
@@ -111,6 +114,7 @@ npm start
 - `npx @syntax-syllogism/mavmeta` / `mavmeta` runs the packaged CLI in static mode, requests an ephemeral local port, and opens the browser automatically.
 
 Optional backend env vars:
+
 - `MAVMETA_HOST` (default: `127.0.0.1`)
 - `MAVMETA_PORT` (default: `8787`)
 - `MAVMETA_WEB_PORT` (default: `5173`)
@@ -143,7 +147,6 @@ Optional backend env vars:
 │       ├── main.ts
 │       ├── index.html
 │       └── app.css
-├── notes/                  # Discovery, plans, and work items
 ├── vite.config.ts
 ├── svelte.config.js
 └── package.json
