@@ -1,120 +1,120 @@
 import type { OrgEnvironment, OrgTarget } from "./org";
 
 export type HitListComponentInput = {
-	metadataType: string;
-	fullName: string;
+  metadataType: string;
+  fullName: string;
 };
 
 export type DestructiveDeployMode = "validate" | "deploy";
 
 export type StartDestructiveDeployRequest = {
-	target: OrgTarget;
-	mode: DestructiveDeployMode;
-	components: HitListComponentInput[];
+  target: OrgTarget;
+  mode: DestructiveDeployMode;
+  components: HitListComponentInput[];
 };
 
 export type StartDestructiveDeployResponse = {
-	operationId: string;
+  operationId: string;
 };
 
 export type DestructiveDeployStatusRequest = {
-	operationId: string;
+  operationId: string;
 };
 
 export type DeploySkippedComponent = HitListComponentInput & {
-	reason: string;
+  reason: string;
 };
 
 export type DeployFailedComponent = HitListComponentInput & {
-	problem: string;
+  problem: string;
 };
 
 export type DestructiveDeployResult = {
-	target: OrgTarget;
-	mode: DestructiveDeployMode;
-	environment: OrgEnvironment;
-	success: boolean;
-	state: "Succeeded" | "PartiallySucceeded" | "Failed" | "Canceled";
-	message: string;
-	skipped: DeploySkippedComponent[];
-	failed: DeployFailedComponent[];
-	rawResult?: Record<string, unknown>;
+  target: OrgTarget;
+  mode: DestructiveDeployMode;
+  environment: OrgEnvironment;
+  success: boolean;
+  state: "Succeeded" | "PartiallySucceeded" | "Failed" | "Canceled";
+  message: string;
+  skipped: DeploySkippedComponent[];
+  failed: DeployFailedComponent[];
+  rawResult?: Record<string, unknown>;
 };
 
 export type DestructiveDeployStatusResponse = {
-	operationId: string;
-	status: "pending" | "running" | "succeeded" | "failed" | "canceled";
-	percentComplete: number;
-	message: string;
-	deployState?: string;
-	componentsProcessed?: number;
-	componentsTotal?: number;
-	result?: DestructiveDeployResult;
+  operationId: string;
+  status: "pending" | "running" | "succeeded" | "failed" | "canceled";
+  percentComplete: number;
+  message: string;
+  deployState?: string;
+  componentsProcessed?: number;
+  componentsTotal?: number;
+  result?: DestructiveDeployResult;
 };
 
 export type CancelDestructiveDeployRequest = {
-	operationId: string;
+  operationId: string;
 };
 
 export type CancelDestructiveDeployResponse = {
-	operationId: string;
-	canceled: boolean;
-	message: string;
+  operationId: string;
+  canceled: boolean;
+  message: string;
 };
 
 export type CancelDeployResponse = {
-	operationId: string;
-	canceled: boolean;
-	message: string;
+  operationId: string;
+  canceled: boolean;
+  message: string;
 };
 
 export type CrossOrgDeployMode = "validate" | "deploy";
 
 export type StartCrossOrgDeployRequest = {
-	source: OrgTarget;
-	target: OrgTarget;
-	mode: CrossOrgDeployMode;
-	components: HitListComponentInput[];
+  source: OrgTarget;
+  target: OrgTarget;
+  mode: CrossOrgDeployMode;
+  components: HitListComponentInput[];
 };
 
 export type StartCrossOrgDeployResponse = {
-	operationId: string;
+  operationId: string;
 };
 
 export type CrossOrgDeployStatusRequest = {
-	operationId: string;
+  operationId: string;
 };
 
 export type CrossOrgDeployResult = {
-	source: OrgTarget;
-	target: OrgTarget;
-	mode: CrossOrgDeployMode;
-	environment: OrgEnvironment;
-	success: boolean;
-	state: "Succeeded" | "PartiallySucceeded" | "Failed" | "Canceled";
-	message: string;
-	skipped: DeploySkippedComponent[];
-	failed: DeployFailedComponent[];
-	rawResult?: Record<string, unknown>;
+  source: OrgTarget;
+  target: OrgTarget;
+  mode: CrossOrgDeployMode;
+  environment: OrgEnvironment;
+  success: boolean;
+  state: "Succeeded" | "PartiallySucceeded" | "Failed" | "Canceled";
+  message: string;
+  skipped: DeploySkippedComponent[];
+  failed: DeployFailedComponent[];
+  rawResult?: Record<string, unknown>;
 };
 
 export type CrossOrgDeployStatusResponse = {
-	operationId: string;
-	status: "pending" | "running" | "succeeded" | "failed" | "canceled";
-	percentComplete: number;
-	message: string;
-	deployState?: string;
-	componentsProcessed?: number;
-	componentsTotal?: number;
-	result?: CrossOrgDeployResult;
+  operationId: string;
+  status: "pending" | "running" | "succeeded" | "failed" | "canceled";
+  percentComplete: number;
+  message: string;
+  deployState?: string;
+  componentsProcessed?: number;
+  componentsTotal?: number;
+  result?: CrossOrgDeployResult;
 };
 
 export type CancelCrossOrgDeployRequest = {
-	operationId: string;
+  operationId: string;
 };
 
 export type CancelCrossOrgDeployResponse = {
-	operationId: string;
-	canceled: boolean;
-	message: string;
+  operationId: string;
+  canceled: boolean;
+  message: string;
 };

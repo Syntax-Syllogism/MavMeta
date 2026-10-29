@@ -15,14 +15,19 @@ concurrency:
 jobs:
   publish:
     name: Publish npm package
+    # The release branch is pushed to both the private origin and the public
+    # mirror, so without this guard the private repository also tries to
+    # publish and fails on every release — it has no trusted-publisher claim,
+    # and the version has already been taken by the mirror's successful run.
+    if: github.repository == 'Syntax-Syllogism/MavMeta'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org

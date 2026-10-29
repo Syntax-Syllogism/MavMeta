@@ -6,7 +6,7 @@ import { installRedactingConsole } from "./logging/redacting-console";
 installRedactingConsole();
 
 const app = mount(App, {
-	target: document.getElementById("app")!,
+  target: document.getElementById("app")!,
 });
 
 export default app;

@@ -1,63 +1,68 @@
-// @ts-nocheck
 import { parseArgs } from "node:util";
 
 const DEFAULT_DEPTH = 2;
 const DEFAULT_DELAY_MS = 500;
 const DEFAULT_APP_URL = "http://localhost:5173";
+/** @type {CrawlArea[]} */
 const DEFAULT_AREAS = [
-	"metadata-explorer",
-	"object-explorer",
-	"lwc-editor",
-	"rest-explorer",
-	"soql-explorer",
-	"cart",
+  "metadata-explorer",
+  "object-explorer",
+  "lwc-editor",
+  "rest-explorer",
+  "soql-explorer",
+  "cart",
 ];
+/** @type {Set<CrawlArea>} */
 const ALLOWED_AREAS = new Set(DEFAULT_AREAS);
 
+/** @typedef {"metadata-explorer" | "object-explorer" | "lwc-editor" | "rest-explorer" | "soql-explorer" | "cart"} CrawlArea */
+/** @typedef {{ help: boolean, depth?: number, delayMs?: number, appUrl?: string, org?: string, areas?: string[], jump?: string, quiet?: boolean }} CliOptions */
+
+/** @param {string[]} [argv] @returns {CliOptions} */
 export function parseCliArgs(argv = process.argv.slice(2)) {
-	const { values } = parseArgs({
-		args: argv,
-		options: {
-			depth: { type: "string" },
-			"delay-ms": { type: "string" },
-			org: { type: "string" },
-			"app-url": { type: "string" },
-			areas: { type: "string" },
-			jump: { type: "string" },
-			quiet: { type: "boolean", default: false },
-			help: { type: "boolean", short: "h", default: false },
-		},
-		allowPositionals: false,
-	});
+  const { values } = parseArgs({
+    args: argv,
+    options: {
+      depth: { type: "string" },
+      "delay-ms": { type: "string" },
+      org: { type: "string" },
+      "app-url": { type: "string" },
+      areas: { type: "string" },
+      jump: { type: "string" },
+      quiet: { type: "boolean", default: false },
+      help: { type: "boolean", short: "h", default: false },
+    },
+    allowPositionals: false,
+  });
 
-	if (values.help) {
-		return { help: true };
-	}
+  if (values.help) {
+    return { help: true };
+  }
 
-	const depth = parseIntegerFlag(values.depth, "--depth", { min: 0, fallback: DEFAULT_DEPTH });
-	const delayMs = parseIntegerFlag(values["delay-ms"], "--delay-ms", {
-		min: 0,
-		fallback: DEFAULT_DELAY_MS,
-	});
-	const appUrl = normalizeAppUrl(values["app-url"] ?? DEFAULT_APP_URL);
-	const org = values.org?.trim() || undefined;
-	const jump = values.jump?.trim() || undefined;
-	const areas = parseAreas(values.areas);
+  const depth = parseIntegerFlag(values.depth, "--depth", { min: 0, fallback: DEFAULT_DEPTH });
+  const delayMs = parseIntegerFlag(values["delay-ms"], "--delay-ms", {
+    min: 0,
+    fallback: DEFAULT_DELAY_MS,
+  });
+  const appUrl = normalizeAppUrl(values["app-url"] ?? DEFAULT_APP_URL);
+  const org = values.org?.trim() || undefined;
+  const jump = values.jump?.trim() || undefined;
+  const areas = parseAreas(values.areas);
 
-	return {
-		help: false,
-		depth,
-		delayMs,
-		appUrl,
-		org,
-		areas,
-		jump,
-		quiet: values.quiet === true,
-	};
+  return {
+    help: false,
+    depth,
+    delayMs,
+    appUrl,
+    org,
+    areas,
+    jump,
+    quiet: values.quiet === true,
+  };
 }
 
 export function getUsageText() {
-	return `
+  return `
 Usage:
   npm run smoke -- [options]
 
@@ -73,60 +78,63 @@ Options:
 `.trim();
 }
 
+/** @param {string | undefined} value @returns {CrawlArea[]} */
 function parseAreas(value) {
-	if (!value?.trim()) {
-		return [...DEFAULT_AREAS];
-	}
+  if (!value?.trim()) {
+    return [...DEFAULT_AREAS];
+  }
 
-	const parts = value
-		.split(",")
-		.map((part) => part.trim())
-		.filter(Boolean);
-	if (parts.length === 0) {
-		return [...DEFAULT_AREAS];
-	}
-	for (const area of parts) {
-		if (!ALLOWED_AREAS.has(area)) {
-			throw new Error(
-				`--areas contains unsupported value "${area}". Allowed values: ${[...ALLOWED_AREAS].join(", ")}`,
-			);
-		}
-	}
-	return Array.from(new Set(parts));
+  const parts = value
+    .split(",")
+    .map((part) => /** @type {CrawlArea} */ (part.trim()))
+    .filter(Boolean);
+  if (parts.length === 0) {
+    return [...DEFAULT_AREAS];
+  }
+  for (const area of parts) {
+    if (!ALLOWED_AREAS.has(area)) {
+      throw new Error(
+        `--areas contains unsupported value "${area}". Allowed values: ${[...ALLOWED_AREAS].join(", ")}`,
+      );
+    }
+  }
+  return /** @type {CrawlArea[]} */ (Array.from(new Set(parts)));
 }
 
+/** @param {string | undefined} value @param {string} flagName @param {{ min: number, fallback: number }} bounds */
 function parseIntegerFlag(value, flagName, { min, fallback }) {
-	if (value === undefined) {
-		return fallback;
-	}
-	const parsed = Number(value);
-	if (!Number.isInteger(parsed) || parsed < min) {
-		throw new Error(`${flagName} must be an integer >= ${min}. Received "${value}".`);
-	}
-	return parsed;
+  if (value === undefined) {
+    return fallback;
+  }
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < min) {
+    throw new Error(`${flagName} must be an integer >= ${min}. Received "${value}".`);
+  }
+  return parsed;
 }
 
+/** @param {string} value @returns {string} */
 function normalizeAppUrl(value) {
-	const trimmed = value.trim();
-	if (!trimmed) {
-		throw new Error("--app-url must be a non-empty URL.");
-	}
+  const trimmed = value.trim();
+  if (!trimmed) {
+    throw new Error("--app-url must be a non-empty URL.");
+  }
 
-	let parsed;
-	try {
-		parsed = new URL(trimmed);
-	} catch {
-		throw new Error(`--app-url must be a valid URL. Received "${value}".`);
-	}
+  let parsed;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    throw new Error(`--app-url must be a valid URL. Received "${value}".`);
+  }
 
-	if (!["http:", "https:"].includes(parsed.protocol)) {
-		throw new Error(`--app-url must use http or https. Received "${value}".`);
-	}
+  if (!["http:", "https:"].includes(parsed.protocol)) {
+    throw new Error(`--app-url must use http or https. Received "${value}".`);
+  }
 
-	parsed.hash = "";
-	parsed.search = "";
-	if (parsed.pathname !== "/") {
-		parsed.pathname = parsed.pathname.replace(/\/+$/, "");
-	}
-	return parsed.toString().replace(/\/$/, "");
+  parsed.hash = "";
+  parsed.search = "";
+  if (parsed.pathname !== "/") {
+    parsed.pathname = parsed.pathname.replace(/\/+$/, "");
+  }
+  return parsed.toString().replace(/\/$/, "");
 }

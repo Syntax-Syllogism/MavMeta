@@ -78,6 +78,8 @@ mavmeta
 
 The npm CLI launch starts the local server in static mode and opens MavMeta in your default browser.
 
+Run `mavmeta --help` to see CLI options or `mavmeta --version` to print the installed version. Both commands exit without starting the server.
+
 ### Developer (from source)
 
 ```bash
@@ -111,13 +113,15 @@ npm start
 - Node backend runs at `http://127.0.0.1:8787` by default.
 - Vite proxies `/api/*` requests to the backend in development.
 - `npm start` serves the built frontend from the backend process on backend host/port.
-- `npx @syntax-syllogism/mavmeta` / `mavmeta` runs the packaged CLI in static mode, requests an ephemeral local port, and opens the browser automatically.
+- `npx @syntax-syllogism/mavmeta` / `mavmeta` runs the packaged CLI in static mode, requests an ephemeral local port, and opens the browser automatically. Use `--help` or `--version` for CLI information without starting the server.
 
 Optional backend env vars:
 
 - `MAVMETA_HOST` (default: `127.0.0.1`)
 - `MAVMETA_PORT` (default: `8787`)
 - `MAVMETA_WEB_PORT` (default: `5173`)
+
+`MAVMETA_HOST` and `MAVMETA_PORT` also configure the packaged CLI. `MAVMETA_WEB_PORT` is used by the source development servers.
 
 ## Project Structure
 
