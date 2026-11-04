@@ -88,7 +88,7 @@
     "happy-dom": "21.0.4",
     "jsdom": "29.1.1",
     "light-my-request": "6.8.0",
-    "lint-staged": "^16.4.0",
+    "lint-staged": "^17.6.0",
     "markdownlint-cli2": "^0.24.0",
     "playwright": "^1.60.0",
     "prettier": "^3.8.3",
