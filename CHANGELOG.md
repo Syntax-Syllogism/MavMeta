@@ -5,12 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0/).
 
+## [0.3.8] - 2026-11-23
+
+### Changed
+
+- Internal maintenance and tooling updates
+
 ## [0.3.7] - 2026-11-23
 
 ### Changed
-- Removed a link to a private sample repository from the documentation
 
-I couldn't confirm that this commit avoids the files in `.gitignore.public`. Both `git show` and PowerShell required approval, so I didn't check which files it touched. If it touched an ignored file, drop the bullet.
+- Removed a link to a private sample repository from the documentation
 
 ## [0.3.6] - 2026-11-17
 
